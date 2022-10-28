@@ -1,0 +1,28 @@
+package webhooks
+
+const (
+	//
+	// Annotations for ServiceAccount
+	//
+	// The workloadIdentityProvider annotattion
+	// This must be the format of "projects/{PROJECT_NUMBER}/locations/{LOCATION}/workloadIdentityPools/{POOL_ID}/providers/{PROVIDER_ID}"
+	WorkloadIdeneityProviderAnnotation = "workload-identity-provider"
+
+	// The serviceaccount email annotation
+	ServiceAccountEmailAnnotation = "service-account-email"
+
+	// The audience annotation
+	AudienceAnnotation = "audience"
+
+	//
+	// Annotations for both ServiceAccount and Pod
+	//
+	// TokenExpiration annotation in seconds
+	TokenExpirationAnnotation = "token-expiration"
+
+	//
+	// Annotations for Pod
+	//
+	// A comma-separated list of container names to skip adding environment variables and volumes to. Applies to `initContainers` and `containers`
+	SkipContainersAnnotation = "skip-containers"
+)
