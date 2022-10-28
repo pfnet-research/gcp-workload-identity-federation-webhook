@@ -2,26 +2,25 @@
 
 This webhook is for mutating pods that will require GCP Workload Identity Federation access from Kubernetes Cluster.
 
-Note: GKE or Anthos natively support to inject workload identity for pods.  This webhook is useful mainly for Kubernetes clusters running in other cloud provider or on-premise.
+Note: GKE or Anthos natively support injecting workload identity for pods.  This webhook is useful mainly for Kubernetes clusters running in other cloud providers or on-premise.
 
 ## Prerequisites
 
-1. Your kubernetes cluster is v1.21 or later.
+1. Kubernetes cluster v1.21 or later.
 
-1. Configure kube-apiserver's `--service-account-issuer` and `--service-account-jwks-uri` properly.
+2. Configure kube-apiserver with `--service-account-issuer` and `--service-account-jwks-uri` properly.
 
-1. Expose [Your Kubernetes Cluster's ServiceAccount issuer discovery endpoint (OIDC discovery endpoint)](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#service-account-issuer-discovery) to the public so that it can reach by the url set in `--service-account-issuer`
+3. Expose [Your Kubernetes Cluster's ServiceAccount issuer discovery endpoint (OIDC discovery endpoint)](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#service-account-issuer-discovery) to the public so that it can reach by the url set in `--service-account-issuer`
   - _Hint: you can use S3/GCS to expose the endpoint to the public._
-  - __WARNING: If your public jwks endpoint are compromised by the malicious attacker, the attacker can hijack your jwks endpoint and issue OIDC Id token that can impersonate any roles for GCP service accounts that are configured to trust to the issuer. So you must keep your jwks endpoint safe all the time.__
+  - __WARNING: If your public JWKS(JSON Web Key Set) endpoint are compromised by the malicious attacker, the attacker can hijack your JWKS endpoint (i.e., issue OIDC ID Tokens) that can impersonate any roles for GCP service accounts that are configured to trust to the issuer. Thus, JWKS endpoint must be secured all the time.__
 
 ## Walk Through
 
+1. [Create an external identity pool and provider][wif] with your OIDC issuer and allowed audience (default: `sts.googleapis.com`) in IAM for your project. It will need to configure attribute mappings and conditions from OIDC ID Tokens to identities in the pool.
 
-1. [Create an external identity pool and provider][wif] with your OIDC issuer in IAM for your project. You would need to prepare attribute mapping and conditions.
+2. [Granting external identities permission to impersonate a service account][grant-sa] so that a Kubernetes `ServiceAccount` can work as a _federated_ workload identity (i.e., it can impersonate a GCP service account).
 
-1. [Granting external identities permission to impersonate a service account][grant-sa] so that kubernetes service account (i.e. external identity) can impersonate GCP service account.
-
-1. Modify your pod's service account to be annotated with the service account and workload identity provider that you want the pod use.
+3. Annotate a Kubernetes `ServiceAccount` with the identity provider and GCP service account that it will impersonate.
 
     ```yaml
     apiVersion: v1
@@ -46,7 +45,7 @@ Note: GKE or Anthos natively support to inject workload identity for pods.  This
         cloud.google.com/token-expiration: "86400"
     ```
 
-1. All new pod pods launched using this k8s ServiceAccount will be modified to use the GCP service account for pods. Below is an example pod spec with the environment variables and volume fields added by the webhook.
+4. All new pods launched using the Kubernetes `ServiceAccount` will be mutated so that they can impersonate the GCP service account. Below is an example pod spec with the environment variables and volume fields mutated by the webhook.
 
     ```yaml
     apiVersion: v1
@@ -56,7 +55,7 @@ Note: GKE or Anthos natively support to inject workload identity for pods.  This
       namespace: service-a
     annotations:
       # optional: A comma-separated list of initContainers and container names
-      #   to skip adding volumes and environment variables
+      #   to skip adding volumeMounts and environment variables
       cloud.google.com/skip-containers: "init-first,sidecar"
       # optional: Defaults to 86400, or value specified in ServiceAccount
       #   annotation as shown in previous step, for expirationSeconds if not set
@@ -64,9 +63,9 @@ Note: GKE or Anthos natively support to inject workload identity for pods.  This
     spec:
       serviceAccountName: app-x
       initContainers:
-    ### gcloud-setup init container is injected by the webhook ###
+        ### gcloud-setup init container is injected by the webhook ###
       - name: gcloud-setup
-        image: gcloud:slim
+        image: google/cloud-sdk:slim
         command:
         - sh
         - -c
@@ -97,7 +96,7 @@ Note: GKE or Anthos natively support to inject workload identity for pods.  This
         image: container-image:version
       - name: container-name
         image: container-image:version
-    ### Everything below is added by the webhook ###
+        ### Everything below is added by the webhook ###
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/run/secrets/gcloud/config/federation.json
@@ -175,12 +174,17 @@ Usage of /gcp-workload-identity-federation-webhook:
 make deploy
 ```
 
-Or, you can inspect `config/default` directory.
+Or, please inspect `config/default` directory.
+
+## Release
+
+The release process is automated by [tagpr](https://github.com/Songmu/tagpr). To release, just merge [the latest release PR](https://github.com/pfnet-research/gcp-workload-identity-federation-webhook/pulls?q=is:pr+is:open+label:tagpr).
 
 ## License
+
 Apache 2.0 - Copyright 2022 Preferred Networks, Inc. or its affiliates. All Rights Reserved.
 See [LICENSE](LICENSE)
 
-## Acknowledgement
+## Acknowledgment
 
 This project is greatly inspired by [aws/amazon-eks-pod-identity-webhook](https://github.com/aws/amazon-eks-pod-identity-webhook).

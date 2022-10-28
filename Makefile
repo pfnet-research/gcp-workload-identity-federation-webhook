@@ -1,6 +1,9 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+TAG := $(shell git describe --tags --always --dirty)
+IMG ?= ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook:$(TAG)
+IMG_LATEST ?= ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook:latest
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 ENVTEST_ARCH := $(shell hack/envtest-arch.sh)
@@ -71,12 +74,14 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build: ## Build docker image with the manager.
 	docker build -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker tag ${IMG} ${IMG_LATEST}
+	docker push ${IMG_LATEST}
 
 ##@ Deployment
 
