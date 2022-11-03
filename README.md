@@ -131,12 +131,12 @@ When running a container with a non-root user, you need to give the container ac
 
 ## Usage
 
-```
+```console
 Usage of /gcp-workload-identity-federation-webhook:
   -annotation-prefix string
         The Service Account annotation to look for (default "cloud.google.com")
   -gcloud-image string
-        Container image for the init container setting up GCloud SDK (default "gcloud:slim")
+        Container image for the init container setting up GCloud SDK (default "google/cloud-sdk:slim")
   -gcp-default-region string
         If set, CLOUDSDK_COMPUTE_REGION will be set to this value in mutated containers
   -health-probe-bind-address string
@@ -145,6 +145,8 @@ Usage of /gcp-workload-identity-federation-webhook:
         Paths to a kubeconfig. Only required if out-of-cluster.
   -metrics-bind-address string
         The address the metric endpoint binds to. (default ":8080")
+  -setup-container-resources string
+        Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'
   -token-audience string
         The default audience for tokens. Can be overridden by annotation (default "sts.googleapis.com")
   -token-expiration duration
