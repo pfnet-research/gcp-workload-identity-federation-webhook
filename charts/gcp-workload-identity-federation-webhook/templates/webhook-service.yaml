@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gcp-workload-identity-federation-webhook.fullname" . }}-webhook-service
+  labels:
+  {{- include "gcp-workload-identity-federation-webhook.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.webhookService.type }}
+  selector:
+    control-plane: controller-manager
+  {{- include "gcp-workload-identity-federation-webhook.selectorLabels" . | nindent 4 }}
+  ports:
+  {{- .Values.webhookService.ports | toYaml | nindent 2 -}}
