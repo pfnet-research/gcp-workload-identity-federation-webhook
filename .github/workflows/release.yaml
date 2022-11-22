@@ -27,23 +27,17 @@ jobs:
     - run: make docker-push
 
     # Publish Helm Chart
-    - name: Configure Git
-      run: |
-        git config user.name "$GITHUB_ACTOR"
-        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-    - name: Install Helm
-      uses: azure/setup-helm@v1
+    - name: strip 'v' from tag for chart version
+      id: tag
+      uses: actions/github-script@v6
       with:
-        version: v3.8.1
-    - name: update versions in Chart.yaml
-      run: |
-        VERSION=${{ github.ref_name }}
-        cd charts/gcp-workload-identity-federation-webhook
-        sed -i "s/^version:.*$/version: ${VERSION#v}/g" Chart.yaml
-        sed -i "s/^appVersion:.*$/appVersion: ${VERSION#v}/g" Chart.yaml
-        cat Chart.yaml
-    - name: Run chart-releaser
-      uses: helm/chart-releaser-action@v1.4.0
-      env:
-        CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        CR_RELEASE_NAME_TEMPLATE: "helm-chart-v{{.Version}}"
+        script: |
+          const tag = process.env.GITHUB_REF_NAME
+          const no_v = tag.replace('v', '')
+          core.setOutput('no_v', no_v)
+    - name: Publish Helm charts
+      uses: stefanprodan/helm-gh-pages@master
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        app_version: ${{steps.tag.outputs.no_v}}
+        chart_version: ${{steps.tag.outputs.no_v}}
