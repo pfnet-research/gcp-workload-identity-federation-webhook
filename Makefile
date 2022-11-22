@@ -82,6 +82,18 @@ docker-push: ## Push docker image with the manager.
 	docker tag ${IMG} ${IMG_LATEST}
 	docker push ${IMG_LATEST}
 
+##@ Helm Chart
+
+.PHONY: lint-chart
+lint-chart: helm
+	docker run --rm -v $(PWD):/repo -w /repo \
+		quay.io/helmpack/chart-testing:latest \
+		ct lint --config ct.yaml --print-config
+	# check generated manifest's schema by default values.yaml 
+	for c in $$(ls charts/);  do (cd charts/$${c} && $(HELM) template . | docker run -i --rm -v $(PWD):/repo -w /repo \
+		ghcr.io/yannh/kubeconform:latest \
+		-schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' -summary); done
+
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -116,6 +128,7 @@ $(LOCALBIN):
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+HELM ?= $(LOCALBIN)/helm
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.5
@@ -136,3 +149,9 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+.PHONY: helm
+HELM_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+helm: $(HELM)
+$(HELM):
+	curl -fsSL $(HELM_INSTALL_SCRIPT) | HELM_INSTALL_DIR=$(LOCALBIN) USE_SUDO=fals bash

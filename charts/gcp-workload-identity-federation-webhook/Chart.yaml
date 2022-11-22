@@ -1,6 +1,8 @@
 apiVersion: v2
 name: gcp-workload-identity-federation-webhook
 description: A Helm chart for gcp-workload-identity-federation-webhook
+kubeVersion: ">=1.21.0"
+home: https://github.com/pfnet-research/gcp-workload-identity-federation-webhook/
 # A chart can be either an 'application' or a 'library' chart.
 #
 # Application charts are a collection of templates that can be packaged into versioned archives
