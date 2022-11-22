@@ -10,6 +10,9 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      IMG: ghcr.io/${{github.repository}}:${{github.ref_name}}
+      IMG_LATEST: ghcr.io/${{github.repository}}:latest
     steps:
     - uses: actions/checkout@v3
 
