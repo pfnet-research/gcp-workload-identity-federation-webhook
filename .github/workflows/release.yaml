@@ -39,7 +39,6 @@ jobs:
         sed -i "s/^appVersion:.*$/appVersion: ${VERSION#v}/g" charts/gcp-workload-identity-federation-webhook/Chart.yaml
     - name: Run chart-releaser
       uses: helm/chart-releaser-action@v1.4.0
-      with:
-        release-name-template: 'v{{ .Version }}'
       env:
         CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        CR_RELEASE_NAME_TEMPLATE: 'v{{ .Version }}'
