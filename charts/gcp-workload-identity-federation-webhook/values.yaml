@@ -25,7 +25,7 @@ controllerManager:
     image:
       repository: ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook
       # default tag is v{{.Chart.AppVersion｝｝
-      # tag: latest 
+      # tag: latest
     args:
     # # The Service Account annotation to look for
     # - --annotation-prefix=cloud.google.com
