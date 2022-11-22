@@ -1,0 +1,8 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "gcp-workload-identity-federation-webhook.fullname" . }}-selfsigned-issuer
+  labels:
+  {{- include "gcp-workload-identity-federation-webhook.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}

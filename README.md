@@ -168,9 +168,20 @@ Usage of /gcp-workload-identity-federation-webhook:
 ### Pre-requisites
 
 - cert-manager: See [cert-manager installation](https://cert-manager.io/docs/installation/)
-- (optional) prometheus-operator: See https://github.com/prometheus-operator/prometheus-operator
+- prometheus-operator: See https://github.com/prometheus-operator/prometheus-operator
 
 ### Deploy
+
+#### Helm chart
+
+```shell
+$ helm repo add gcp-workload-identity-federation-webhook https://pfnet-research.github.io/gcp-workload-identity-federation-webhook
+$ helm repo update
+$ helm install gcp-wif-webhook gcp-workload-identity-federation-webhook/gcp-workload-identity-federation-webhook \
+    --namespace gcp-wif-webhook-system　--create-namespace
+```
+
+#### Kustomize
 
 ```shell
 make deploy

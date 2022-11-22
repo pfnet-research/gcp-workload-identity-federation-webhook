@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "gcp-workload-identity-federation-webhook.fullname" . }}-serving-cert
+  labels:
+  {{- include "gcp-workload-identity-federation-webhook.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+  - '{{ include "gcp-workload-identity-federation-webhook.fullname" . }}-webhook-service.{{
+    .Release.Namespace }}.svc'
+  - '{{ include "gcp-workload-identity-federation-webhook.fullname" . }}-webhook-service.{{
+    .Release.Namespace }}.svc.{{ .Values.kubernetesClusterDomain }}'
+  issuerRef:
+    kind: Issuer
+    name: '{{ include "gcp-workload-identity-federation-webhook.fullname" . }}-selfsigned-issuer'
+  secretName: webhook-server-cert
