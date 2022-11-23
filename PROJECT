@@ -1,4 +1,4 @@
-domain: preferred.jp
+domain: pfnet-research.github.com
 layout:
 - go.kubebuilder.io/v3
 projectName: gcp-workload-identity-webhook
