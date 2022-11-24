@@ -1,3 +1,4 @@
+{{- if .Values.serviceMonitor.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -17,3 +18,4 @@ spec:
     matchLabels:
       control-plane: controller-manager
     {{- include "gcp-workload-identity-federation-webhook.selectorLabels" . | nindent 6 }}
+{{- end }}

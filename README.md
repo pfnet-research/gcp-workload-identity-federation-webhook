@@ -168,7 +168,7 @@ Usage of /gcp-workload-identity-federation-webhook:
 ### Pre-requisites
 
 - cert-manager: See [cert-manager installation](https://cert-manager.io/docs/installation/)
-- prometheus-operator: See https://github.com/prometheus-operator/prometheus-operator
+- (optional) prometheus-operator: See https://github.com/prometheus-operator/prometheus-operator
 
 ### Deploy
 

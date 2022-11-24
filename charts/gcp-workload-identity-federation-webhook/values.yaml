@@ -49,6 +49,9 @@ controllerManager:
 
 kubernetesClusterDomain: cluster.local
 
+serviceMonitor:
+  enabled: false
+
 metricsService:
   ports:
   - name: metrics
