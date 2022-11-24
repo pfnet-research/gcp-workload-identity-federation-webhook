@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "gcp-workload-identity-federation-webhook.fullname" . }}-webhook-service
+  namespace: {{ .Release.Namespace }}
   labels:
   {{- include "gcp-workload-identity-federation-webhook.labels" . | nindent 4 }}
 spec:
