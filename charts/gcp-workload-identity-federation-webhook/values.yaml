@@ -1,0 +1,69 @@
+# NOTE: Use nameOverride to prevent generating long resource names (more than 63 chars)
+#       because the chart name is too long for it.
+nameOverride: gcp-wif-webhook
+
+controllerManager:
+  tolerations: []
+  nodeSelector: {}
+  affinity: {}
+
+  replicas: 1
+
+  kubeRbacProxy:
+    image:
+      repository: gcr.io/kubebuilder/kube-rbac-proxy
+      tag: v0.11.0
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 5m
+        memory: 64Mi
+
+  manager:
+    image:
+      repository: ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook
+      # default tag is v{{.Chart.AppVersion｝｝
+      # tag: latest
+    args:
+    # # The Service Account annotation to look for
+    # - --annotation-prefix=cloud.google.com
+    # # The default audience for tokens. Can be overridden by annotation
+    # - --token-audience=sts.googleapis.com
+    # # The default token expiration
+    # # - --token-expiration=24h
+    # # If set, CLOUDSDK_COMPUTE_REGION will be set to this value in mutated containers
+    # - --gcp-default-region=
+    # # Container image for the init container setting up GCloud SDK
+    # - --gcloud-image=google/cloud-sdk:slim
+    # # Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'
+    # - --setup-container-resources=
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+
+kubernetesClusterDomain: cluster.local
+
+serviceMonitor:
+  enabled: false
+
+metricsService:
+  ports:
+  - name: metrics
+    port: 8443
+    protocol: TCP
+    targetPort: metrics
+  type: ClusterIP
+
+webhookService:
+  ports:
+  - name: webhook
+    port: 443
+    protocol: TCP
+    targetPort: webhook
+  type: ClusterIP

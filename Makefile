@@ -82,6 +82,21 @@ docker-push: ## Push docker image with the manager.
 	docker tag ${IMG} ${IMG_LATEST}
 	docker push ${IMG_LATEST}
 
+##@ Helm Chart
+
+DOCKER_RUN ?= docker run --rm -i -v $(PWD):/repo -w /repo -u "$(shell id -u):$(shell id -g)"
+HELM ?= $(DOCKER_RUN) docker.io/alpine/helm:latest
+CT ?= $(DOCKER_RUN) quay.io/helmpack/chart-testing:latest ct
+KUBECONFORM ?= $(DOCKER_RUN) ghcr.io/yannh/kubeconform:latest
+
+.PHONY: lint-chart
+lint-chart:
+	$(CT) lint --config ct.yaml --print-config
+	# check generated manifest's schema by default values.yaml
+	for chart in $$(ls charts/); do \
+		$(HELM) template "charts/$${chart}" | $(KUBECONFORM) -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' -summary; \
+	done
+
 ##@ Deployment
 
 ifndef ignore-not-found
