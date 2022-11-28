@@ -66,7 +66,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	// inject gcloud setup initContainer
 	//
 	pod.Spec.InitContainers = prependOrReplaceContainer(pod.Spec.InitContainers, gcloudSetupContainer(
-		*idConfig.WorkloadIdeneityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, m.SetupContainerResources,
+		*idConfig.WorkloadIdeneityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, m.RunAsUser, m.SetupContainerResources,
 	))
 
 	//

@@ -127,7 +127,7 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
 
 ### Usage with non-root container user
 
-When running a container with a non-root user, you need to give the container access to the token file by setting the `securityContext.fsGroup` field.
+When running a container with a non-root user, you need to give user id for GCloud SDK container with the argument `-run-as-user`
 
 ## Usage
 
@@ -135,6 +135,8 @@ When running a container with a non-root user, you need to give the container ac
 Usage of /gcp-workload-identity-federation-webhook:
   -annotation-prefix string
         The Service Account annotation to look for (default "cloud.google.com")
+  -run-as-user string
+        Set the user id for GCloud SDK container
   -gcloud-image string
         Container image for the init container setting up GCloud SDK (default "google/cloud-sdk:slim")
   -gcp-default-region string

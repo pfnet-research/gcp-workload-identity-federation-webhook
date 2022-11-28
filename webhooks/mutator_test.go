@@ -82,6 +82,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 							saEmail,
 							project,
 							GcloudImageDefault,
+							0,
 							setupContainerResources,
 						)), decorateDefault(corev1.Container{
 							Name:         "ictr",

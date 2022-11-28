@@ -23,6 +23,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			MinTokenExpration:      MinTokenExprationDefault,
 			DefaultGCloudRegion:    DefaultGCloudRegionDefault,
 			GcloudImage:            GcloudImageDefault,
+			RunAsUser:              1000,
 			SetupContainerResources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("100m"),
@@ -138,6 +139,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 							*idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
+							m.RunAsUser,
 							m.SetupContainerResources,
 						), {
 							Name:         "ctr",
@@ -200,6 +202,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 							*idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
+							m.RunAsUser,
 							m.SetupContainerResources,
 						), {
 							Name:         "ctr",

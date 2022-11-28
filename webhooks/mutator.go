@@ -36,6 +36,7 @@ type GCPWorkloadIdentityMutator struct {
 	MinTokenExpration       time.Duration
 	DefaultGCloudRegion     string
 	GcloudImage             string
+	RunAsUser               int64
 	SetupContainerResources *corev1.ResourceRequirements
 
 	logger  logr.Logger
