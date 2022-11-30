@@ -139,8 +139,6 @@ When running a container with a non-root user, you need to give user id for GClo
 Usage of /gcp-workload-identity-federation-webhook:
   -annotation-prefix string
         The Service Account annotation to look for (default "cloud.google.com")
-  -run-as-user string
-        Set the user id for GCloud SDK container
   -gcloud-image string
         Container image for the init container setting up GCloud SDK (default "google/cloud-sdk:slim")
   -gcp-default-region string
