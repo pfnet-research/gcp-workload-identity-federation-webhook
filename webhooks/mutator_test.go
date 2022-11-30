@@ -19,6 +19,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 	saEmail := fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)
 	audience := `test-audience`
 	tokenExpiration := int64(3600)
+	var runAsUser int64 = 1000
 
 	var sa corev1.ServiceAccount
 
@@ -32,6 +33,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 					saEmailAnnotation:         saEmail,
 					audienceAnnotation:        audience,
 					tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+					runAsUserAnnotation:       fmt.Sprint(runAsUser),
 				},
 			},
 		}
@@ -82,7 +84,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 							saEmail,
 							project,
 							GcloudImageDefault,
-							0,
+							runAsUser,
 							setupContainerResources,
 						)), decorateDefault(corev1.Container{
 							Name:         "ictr",
