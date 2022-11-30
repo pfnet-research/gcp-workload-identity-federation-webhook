@@ -131,7 +131,7 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
 
 ### Usage with non-root container user
 
-When running a container with a non-root user, you need to give user id for GCloud SDK container with the argument `-run-as-user`
+When running a container with a non-root user, you need to give user id for GCloud SDK container using the annotation `cloud.google.com/gcloud-run-as-user` in the service account.
 
 ## Usage
 
