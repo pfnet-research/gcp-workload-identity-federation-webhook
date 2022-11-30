@@ -29,8 +29,6 @@ controllerManager:
     args:
     # # The Service Account annotation to look for
     # - --annotation-prefix=cloud.google.com
-    # # The user id for GCloud SDK container
-    # - -run-as-user=1000
     # # The default audience for tokens. Can be overridden by annotation
     # - --token-audience=sts.googleapis.com
     # # The default token expiration
