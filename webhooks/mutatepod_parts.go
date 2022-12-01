@@ -51,12 +51,14 @@ func k8sSATokenVolume(
 // Containers
 func gcloudSetupContainer(
 	workloadIdProvider, saEmail, project, gcloudImage string,
-	runAsUser int64,
+	runAsUser *int64,
 	resources *corev1.ResourceRequirements,
 ) corev1.Container {
-	securityContext := &corev1.SecurityContext{}
-	if runAsUser > 0 {
-		securityContext.RunAsUser = pointer.Int64(runAsUser)
+	var securityContext *corev1.SecurityContext
+	if runAsUser != nil {
+		securityContext = &corev1.SecurityContext{
+			RunAsUser: runAsUser,
+		}
 	}
 
 	c := corev1.Container{

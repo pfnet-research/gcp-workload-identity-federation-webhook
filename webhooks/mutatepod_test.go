@@ -37,7 +37,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
-				RunAsUser:                1000,
+				RunAsUser:                pointer.Int64(1000),
 			}
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -58,7 +58,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
-				RunAsUser:                1000,
+				RunAsUser:                pointer.Int64(1000),
 			}
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -170,7 +170,6 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
-				RunAsUser:                0,
 			}
 			pod := &corev1.Pod{
 				Spec: corev1.PodSpec{
