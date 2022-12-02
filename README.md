@@ -44,7 +44,7 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
         #         annotation as shown in the next step.
         cloud.google.com/token-expiration: "86400"
 
-        # optional: Defaults to 0 if not set. This value defines the container security context with runAsUser
+        # optional: This value defines the container security context with runAsUser
         #           with the defined user. This could avoid problems related with root requirement from gcloud image
         cloud.google.com/gcloud-run-as-user: "1000"
     ```
