@@ -17,6 +17,7 @@ var (
 type GCPWorkloadIdentityConfig struct {
 	WorkloadIdeneityProvider *string
 	ServiceAccountEmail      *string
+	RunAsUser                *int64
 
 	Audience               *string
 	TokenExpirationSeconds *int64
@@ -46,6 +47,14 @@ func NewGCPWorkloadIdentityConfig(
 			return nil, fmt.Errorf("%s must be positive integer string: %w", filepath.Join(annotationDomain, TokenExpirationAnnotation), err)
 		}
 		cfg.TokenExpirationSeconds = &seconds
+	}
+
+	if v, ok := sa.Annotations[filepath.Join(annotationDomain, RunAsUserAnnotation)]; ok {
+		userId, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("%s must be positive integer string: %w", filepath.Join(annotationDomain, RunAsUserAnnotation), err)
+		}
+		cfg.RunAsUser = &userId
 	}
 
 	if cfg.WorkloadIdeneityProvider == nil && cfg.ServiceAccountEmail == nil {

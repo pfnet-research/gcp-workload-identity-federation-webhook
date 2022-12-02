@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	var m *GCPWorkloadIdentityMutator
-
+	project := "demo"
 	BeforeEach(func() {
 		m = &GCPWorkloadIdentityMutator{
 			AnnotationDomain:       annotaitonDomain,
@@ -34,9 +34,10 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should reaise error", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      pointer.StringPtr("sa@email"),
+				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
+				RunAsUser:                pointer.Int64(1000),
 			}
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -54,9 +55,10 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should replace reqiured fields and override configurations", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      pointer.StringPtr("sa@email"),
+				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
+				RunAsUser:                pointer.Int64(1000),
 			}
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -120,6 +122,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				googleAppCredentialsEnvVar,
 				cloudSDKComputeRegionEnvVar("not-to-be-replaced"),
 				cloudSDKConfigEnvVar,
+				projectEnvVar(project),
 			}
 			expected := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -135,7 +138,9 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						gcloudSetupContainer(
 							*idConfig.WorkloadIdeneityProvider,
 							*idConfig.ServiceAccountEmail,
+							project,
 							m.GcloudImage,
+							idConfig.RunAsUser,
 							m.SetupContainerResources,
 						), {
 							Name:         "ctr",
@@ -164,7 +169,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should mutate required fields", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      pointer.StringPtr("sa@email"),
+				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 			}
 			pod := &corev1.Pod{
 				Spec: corev1.PodSpec{
@@ -196,20 +201,22 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						gcloudSetupContainer(
 							*idConfig.WorkloadIdeneityProvider,
 							*idConfig.ServiceAccountEmail,
+							project,
 							m.GcloudImage,
+							idConfig.RunAsUser,
 							m.SetupContainerResources,
 						), {
 							Name:         "ctr",
 							Image:        "busybox",
 							VolumeMounts: volumeMountsToAddOrReplace,
-							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion)...),
+							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 						},
 					},
 					Containers: []corev1.Container{{
 						Name:         "ctr",
 						Image:        "busybox",
 						VolumeMounts: volumeMountsToAddOrReplace,
-						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion)...),
+						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 					}},
 					Volumes: volumesToAddOrReplace(
 						m.DefaultAudience,

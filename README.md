@@ -43,6 +43,10 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
         #   Note: This value can be overwritten if specified in the pod 
         #         annotation as shown in the next step.
         cloud.google.com/token-expiration: "86400"
+
+        # optional: This value defines the container security context with runAsUser
+        #           with the defined user. This could avoid problems related with root requirement from gcloud image
+        cloud.google.com/gcloud-run-as-user: "1000"
     ```
 
 4. All new pods launched using the Kubernetes `ServiceAccount` will be mutated so that they can impersonate the GCP service account. Below is an example pod spec with the environment variables and volume fields mutated by the webhook.
@@ -127,7 +131,7 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
 
 ### Usage with non-root container user
 
-When running a container with a non-root user, you need to give the container access to the token file by setting the `securityContext.fsGroup` field.
+When running a container with a non-root user, you need to give user id for GCloud SDK container using the annotation `cloud.google.com/gcloud-run-as-user` in the service account.
 
 ## Usage
 

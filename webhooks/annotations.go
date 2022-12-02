@@ -15,6 +15,12 @@ const (
 	AudienceAnnotation = "audience"
 
 	//
+	// Annotations for ServiceAccount
+	//
+	// UserID to be set in the container securityContext.runAsUser for the gcloud sdk
+	RunAsUserAnnotation = "gcloud-run-as-user"
+
+	//
 	// Annotations for both ServiceAccount and Pod
 	//
 	// TokenExpiration annotation in seconds

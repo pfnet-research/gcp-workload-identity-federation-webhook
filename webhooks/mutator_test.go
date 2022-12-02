@@ -15,9 +15,11 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 	namespace := "default"
 
 	workloadProvider := `projects/{PROJECT_NUMBER}/locations/{LOCATION}/workloadIdentityPools/{POOL_ID}/providers/{PROVIDER_ID}`
-	saEmail := `sa@project.iam.gserviceaccount.com`
+	project := `project`
+	saEmail := fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)
 	audience := `test-audience`
 	tokenExpiration := int64(3600)
+	var runAsUser int64 = 1000
 
 	var sa corev1.ServiceAccount
 
@@ -31,6 +33,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 					saEmailAnnotation:         saEmail,
 					audienceAnnotation:        audience,
 					tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+					runAsUserAnnotation:       fmt.Sprint(runAsUser),
 				},
 			},
 		}
@@ -79,20 +82,22 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 						decorateDefault(gcloudSetupContainer(
 							workloadProvider,
 							saEmail,
+							project,
 							GcloudImageDefault,
+							&runAsUser,
 							setupContainerResources,
 						)), decorateDefault(corev1.Container{
 							Name:         "ictr",
 							Image:        "busybox:test",
 							VolumeMounts: volumeMountsToAddOrReplace,
-							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault)...),
+							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
 						}),
 					},
 					Containers: []corev1.Container{decorateDefault(corev1.Container{
 						Name:         "ctr",
 						Image:        "busybox:test",
 						VolumeMounts: volumeMountsToAddOrReplace,
-						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault)...),
+						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
 					})},
 					Volumes: volumesToAddOrReplace(audience, tokenExpiration),
 				},

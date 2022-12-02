@@ -30,6 +30,7 @@ var (
 	saEmailAnnotation         = filepath.Join(annotaitonDomain, ServiceAccountEmailAnnotation)
 	audienceAnnotation        = filepath.Join(annotaitonDomain, AudienceAnnotation)
 	tokenExpirationAnnotation = filepath.Join(annotaitonDomain, TokenExpirationAnnotation)
+	runAsUserAnnotation       = filepath.Join(annotaitonDomain, RunAsUserAnnotation)
 	setupContainerResources   = &corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),

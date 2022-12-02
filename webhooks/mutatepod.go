@@ -3,11 +3,18 @@ package webhooks
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
+
+var projectRegex *regexp.Regexp
+
+func init() {
+	projectRegex = regexp.MustCompile(`@(.*).iam.gserviceaccount.com`)
+}
 
 func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWorkloadIdentityConfig) error {
 	audience := m.DefaultAudience
@@ -40,6 +47,15 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	pod.Annotations[filepath.Join(m.AnnotationDomain, TokenExpirationAnnotation)] = fmt.Sprint(expirationSeconds)
 
 	//
+	// calculate project from service account
+	//
+	matches := projectRegex.FindStringSubmatch(*idConfig.ServiceAccountEmail)
+	project := ""
+	if len(matches) >= 2 {
+		project = matches[1] // the group 0 is thw whole match
+	}
+
+	//
 	// mutate volumes(k8s sa token volume, gcloud config volume)
 	//
 	for _, v := range volumesToAddOrReplace(audience, expirationSeconds) {
@@ -50,7 +66,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	// inject gcloud setup initContainer
 	//
 	pod.Spec.InitContainers = prependOrReplaceContainer(pod.Spec.InitContainers, gcloudSetupContainer(
-		*idConfig.WorkloadIdeneityProvider, *idConfig.ServiceAccountEmail, m.GcloudImage, m.SetupContainerResources,
+		*idConfig.WorkloadIdeneityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
 	))
 
 	//
@@ -67,7 +83,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		if _, ok := skipContainerNames[ctr.Name]; ok {
 			continue
 		}
-		m.mutateContainer(&ctr, volumeMountsToAddOrReplace, envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion))
+		m.mutateContainer(&ctr, volumeMountsToAddOrReplace, envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
 		pod.Spec.InitContainers[i] = ctr
 	}
 	for i := range pod.Spec.Containers {
@@ -75,7 +91,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		if _, ok := skipContainerNames[ctr.Name]; ok {
 			continue
 		}
-		m.mutateContainer(&ctr, volumeMountsToAddOrReplace, envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion))
+		m.mutateContainer(&ctr, volumeMountsToAddOrReplace, envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
 		pod.Spec.Containers[i] = ctr
 	}
 

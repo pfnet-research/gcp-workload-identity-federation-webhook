@@ -42,7 +42,7 @@ func k8sSATokenVolume(
 						Path:              K8sSATokenName,
 					},
 				}},
-				DefaultMode: pointer.Int32(288), // 440
+				DefaultMode: pointer.Int32(0440),
 			},
 		},
 	}
@@ -50,9 +50,17 @@ func k8sSATokenVolume(
 
 // Containers
 func gcloudSetupContainer(
-	workloadIdProvider, saEmail, gcloudImage string,
+	workloadIdProvider, saEmail, project, gcloudImage string,
+	runAsUser *int64,
 	resources *corev1.ResourceRequirements,
 ) corev1.Container {
+	var securityContext *corev1.SecurityContext
+	if runAsUser != nil {
+		securityContext = &corev1.SecurityContext{
+			RunAsUser: runAsUser,
+		}
+	}
+
 	c := corev1.Container{
 		Name:  GCloudSetupInitContainerName,
 		Image: gcloudImage,
@@ -77,7 +85,8 @@ func gcloudSetupContainer(
 		}, {
 			Name:  "CLOUDSDK_CONFIG",
 			Value: GCloudConifgMountPath,
-		}},
+		}, projectEnvVar(project)},
+		SecurityContext: securityContext,
 	}
 	if resources != nil {
 		c.Resources = *resources
@@ -114,13 +123,20 @@ var (
 	}
 )
 
-func envVarsToAddIfNotPresent(region string) []corev1.EnvVar {
-	return []corev1.EnvVar{cloudSDKComputeRegionEnvVar(region)}
+func envVarsToAddIfNotPresent(region, project string) []corev1.EnvVar {
+	return []corev1.EnvVar{cloudSDKComputeRegionEnvVar(region), projectEnvVar(project)}
 }
 
 func cloudSDKComputeRegionEnvVar(region string) corev1.EnvVar {
 	return corev1.EnvVar{
 		Name:  "CLOUDSDK_COMPUTE_REGION",
 		Value: region,
+	}
+}
+
+func projectEnvVar(project string) corev1.EnvVar {
+	return corev1.EnvVar{
+		Name:  "CLOUDSDK_CORE_PROJECT",
+		Value: project,
 	}
 }
