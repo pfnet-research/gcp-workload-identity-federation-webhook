@@ -42,7 +42,7 @@ func k8sSATokenVolume(
 						Path:              K8sSATokenName,
 					},
 				}},
-				DefaultMode: pointer.Int32(0440),
+				DefaultMode: pointer.Int32(444),
 			},
 		},
 	}
