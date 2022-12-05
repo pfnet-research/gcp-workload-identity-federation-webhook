@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	var m *GCPWorkloadIdentityMutator
-	var defaultMode int32 = 777
+	var defaultMode int32 = 0400
 	project := "demo"
 	BeforeEach(func() {
 		m = &GCPWorkloadIdentityMutator{

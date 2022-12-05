@@ -156,7 +156,7 @@ Usage of /gcp-workload-identity-federation-webhook:
   -token-expiration duration
         The token expiration (default 24h0m0s)
   -token-default-mode int
-        DefaultMode for the token volume (default 440)
+        DefaultMode for the token volume (default 0440)
   -zap-devel
         Development Mode defaults(encoder=consoleEncoder,logLevel=Debug,stackTraceLevel=Warn). Production Mode defaults(encoder=jsonEncoder,logLevel=Info,stackTraceLevel=Error) (default true)
   -zap-encoder value
