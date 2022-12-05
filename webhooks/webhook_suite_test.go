@@ -83,6 +83,7 @@ var _ = BeforeSuite(func() {
 		MinTokenExpration:       MinTokenExprationDefault,
 		DefaultGCloudRegion:     DefaultGCloudRegionDefault,
 		GcloudImage:             GcloudImageDefault,
+		DefaultMode:             VolumeModeDefault,
 		SetupContainerResources: setupContainerResources,
 	}).SetupWithManager(ctx, k8sManager)
 	Expect(err).NotTo(HaveOccurred())

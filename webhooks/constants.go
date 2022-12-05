@@ -10,6 +10,7 @@ const (
 	MinTokenExprationDefault      = time.Duration(1) * time.Hour
 	DefaultGCloudRegionDefault    = "asia-northeast1"
 	GcloudImageDefault            = "google/cloud-sdk:slim"
+	VolumeModeDefault             = 440
 	SetupContainerResources       = ""
 
 	// Constants for injected fields
