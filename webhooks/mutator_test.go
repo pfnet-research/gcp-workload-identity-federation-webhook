@@ -99,7 +99,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 						VolumeMounts: volumeMountsToAddOrReplace,
 						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
 					})},
-					Volumes: volumesToAddOrReplace(audience, tokenExpiration),
+					Volumes: volumesToAddOrReplace(audience, tokenExpiration, VolumeModeDefault),
 				},
 			}
 

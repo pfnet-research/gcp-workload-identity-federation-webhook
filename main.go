@@ -58,6 +58,7 @@ func main() {
 	defaultTokenExpiration := flag.Duration("token-expiration", webhooks.DefaultTokenExpirationDefault, "The token expiration")
 	defaultRegion := flag.String("gcp-default-region", "", "If set, CLOUDSDK_COMPUTE_REGION will be set to this value in mutated containers")
 	gCloudImage := flag.String("gcloud-image", webhooks.GcloudImageDefault, "Container image for the init container setting up GCloud SDK")
+	tokenDefaultMode := flag.Int("token-default-mode", webhooks.VolumeModeDefault, "DefaultMode for the token volume. CAUTION: if you allow reading from others (e.g. '0444'), the token can read from anyone who can log in to the node.")
 	setupContainerResources := flag.String("setup-container-resources", webhooks.SetupContainerResources, `Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'`)
 
 	opts := zap.Options{
@@ -95,6 +96,7 @@ func main() {
 		MinTokenExpration:       webhooks.MinTokenExprationDefault,
 		DefaultGCloudRegion:     *defaultRegion,
 		GcloudImage:             *gCloudImage,
+		DefaultMode:             int32(*tokenDefaultMode),
 		SetupContainerResources: setupContainerResourceRequirements,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to setup gcp-workload-identity-mutator")

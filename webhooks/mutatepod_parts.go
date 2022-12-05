@@ -23,13 +23,15 @@ var (
 func volumesToAddOrReplace(
 	audience string,
 	expirationSeconds int64,
+	defaultMode int32,
 ) []corev1.Volume {
-	return []corev1.Volume{k8sSATokenVolume(audience, expirationSeconds), gcloudConfigVolume}
+	return []corev1.Volume{k8sSATokenVolume(audience, expirationSeconds, defaultMode), gcloudConfigVolume}
 }
 
 func k8sSATokenVolume(
 	audience string,
 	expirationSeconds int64,
+	defaultMode int32,
 ) corev1.Volume {
 	return corev1.Volume{
 		Name: K8sSATokenVolumeName,
@@ -42,7 +44,7 @@ func k8sSATokenVolume(
 						Path:              K8sSATokenName,
 					},
 				}},
-				DefaultMode: pointer.Int32(0440),
+				DefaultMode: pointer.Int32(defaultMode),
 			},
 		},
 	}

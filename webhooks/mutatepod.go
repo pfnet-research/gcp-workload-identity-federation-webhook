@@ -58,7 +58,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	//
 	// mutate volumes(k8s sa token volume, gcloud config volume)
 	//
-	for _, v := range volumesToAddOrReplace(audience, expirationSeconds) {
+	for _, v := range volumesToAddOrReplace(audience, expirationSeconds, int32(m.DefaultMode)) {
 		pod.Spec.Volumes = addOrReplaceVolume(pod.Spec.Volumes, v)
 	}
 

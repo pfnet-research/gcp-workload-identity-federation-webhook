@@ -14,6 +14,7 @@ import (
 
 var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	var m *GCPWorkloadIdentityMutator
+	var defaultMode int32 = 0400
 	project := "demo"
 	BeforeEach(func() {
 		m = &GCPWorkloadIdentityMutator{
@@ -23,6 +24,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			MinTokenExpration:      MinTokenExprationDefault,
 			DefaultGCloudRegion:    DefaultGCloudRegionDefault,
 			GcloudImage:            GcloudImageDefault,
+			DefaultMode:            defaultMode,
 			SetupContainerResources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("100m"),
@@ -154,7 +156,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						VolumeMounts: volumeMountsToAddOrReplace,
 						Env:          expectedEnvVars,
 					}},
-					Volumes: volumesToAddOrReplace("my-audience", 3601),
+					Volumes: volumesToAddOrReplace("my-audience", 3601, defaultMode),
 				},
 			}
 			// Expect(pod.Annotations).To(BeEquivalentTo(expected.Annotations))
@@ -221,6 +223,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 					Volumes: volumesToAddOrReplace(
 						m.DefaultAudience,
 						(int64)(m.DefaultTokenExpiration.Seconds()),
+						defaultMode,
 					),
 				},
 			}

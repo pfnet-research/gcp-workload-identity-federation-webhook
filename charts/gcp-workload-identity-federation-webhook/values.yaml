@@ -39,6 +39,8 @@ controllerManager:
     # - --gcloud-image=google/cloud-sdk:slim
     # # Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'
     # - --setup-container-resources=
+    # # DefaultMode for the token volume (default 0440 (octal int literal))
+    # - --token-default-mode=
     resources:
       limits:
         cpu: 500m
