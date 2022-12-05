@@ -41,7 +41,6 @@ controllerManager:
     # - --setup-container-resources=
     # # DefaultMode for the token volume (default 440)
     # - --token-default-mode=
-        
     resources:
       limits:
         cpu: 500m
