@@ -56,7 +56,15 @@ func gcloudSetupContainer(
 	runAsUser *int64,
 	resources *corev1.ResourceRequirements,
 ) corev1.Container {
-	var securityContext *corev1.SecurityContext
+	// for Restricted Profile in Pod Security Standards
+	securityContext := &corev1.SecurityContext{
+		AllowPrivilegeEscalation: pointer.Bool(false),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{
+				"ALL",
+			},
+		},
+	}
 	if runAsUser != nil {
 		securityContext = &corev1.SecurityContext{
 			RunAsUser: runAsUser,
