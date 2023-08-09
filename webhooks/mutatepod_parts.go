@@ -65,10 +65,9 @@ func gcloudSetupContainer(
 			},
 		},
 	}
+
 	if runAsUser != nil {
-		securityContext = &corev1.SecurityContext{
-			RunAsUser: runAsUser,
-		}
+		securityContext.RunAsUser = runAsUser
 	}
 
 	c := corev1.Container{
