@@ -31,6 +31,8 @@ var (
 	audienceAnnotation        = filepath.Join(annotaitonDomain, AudienceAnnotation)
 	tokenExpirationAnnotation = filepath.Join(annotaitonDomain, TokenExpirationAnnotation)
 	runAsUserAnnotation       = filepath.Join(annotaitonDomain, RunAsUserAnnotation)
+	injectionModeAnnotation   = filepath.Join(annotaitonDomain, InjectionModeAnnotation)
+	externalConfigAnnotation  = filepath.Join(annotaitonDomain, ExternalCredentialsJsonAnnotation)
 	setupContainerResources   = &corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),

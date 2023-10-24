@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -18,10 +19,19 @@ type GCPWorkloadIdentityConfig struct {
 	WorkloadIdentityProvider *string
 	ServiceAccountEmail      *string
 	RunAsUser                *int64
+	InjectionMode            InjectionMode
 
 	Audience               *string
 	TokenExpirationSeconds *int64
 }
+
+type InjectionMode string
+
+const (
+	UndefinedMode InjectionMode = ""
+	GCloudMode    InjectionMode = "gcloud"
+	DirectMode    InjectionMode = "direct"
+)
 
 func NewGCPWorkloadIdentityConfig(
 	annotationDomain string,
@@ -55,6 +65,19 @@ func NewGCPWorkloadIdentityConfig(
 			return nil, fmt.Errorf("%s must be positive integer string: %w", filepath.Join(annotationDomain, RunAsUserAnnotation), err)
 		}
 		cfg.RunAsUser = &userId
+	}
+
+	if v, ok := sa.Annotations[filepath.Join(annotationDomain, InjectionModeAnnotation)]; ok {
+		switch InjectionMode(strings.ToLower(v)) {
+		case DirectMode:
+			cfg.InjectionMode = DirectMode
+		case GCloudMode:
+			cfg.InjectionMode = GCloudMode
+		default:
+			return nil, fmt.Errorf("%s mode must be '%s', '%s' or unset.", filepath.Join(annotationDomain, InjectionModeAnnotation), DirectMode, GCloudMode)
+		}
+	} else {
+		cfg.InjectionMode = UndefinedMode
 	}
 
 	if cfg.WorkloadIdentityProvider == nil && cfg.ServiceAccountEmail == nil {

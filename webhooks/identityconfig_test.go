@@ -71,6 +71,54 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 				}))
 			})
 		})
+		When("ServiceAccount with 'direct' injection mode annotation", func() {
+			It("can create GCPWorkloadIdentityConfig", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:      workloadProvider,
+							saEmailAnnotation:         saEmail,
+							audienceAnnotation:        audience,
+							tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+							injectionModeAnnotation:   string(DirectMode),
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      &saEmail,
+					Audience:                 &audience,
+					TokenExpirationSeconds:   &tokenExpiration,
+					InjectionMode:            DirectMode,
+				}))
+			})
+		})
+		When("ServiceAccount with 'gcloud' injection mode annotation", func() {
+			It("can create GCPWorkloadIdentityConfig", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:      workloadProvider,
+							saEmailAnnotation:         saEmail,
+							audienceAnnotation:        audience,
+							tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+							injectionModeAnnotation:   string(GCloudMode),
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      &saEmail,
+					Audience:                 &audience,
+					TokenExpirationSeconds:   &tokenExpiration,
+					InjectionMode:            GCloudMode,
+				}))
+			})
+		})
 	})
 	Describe("Failure Case", func() {
 		var sa corev1.ServiceAccount
@@ -132,6 +180,22 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("must be positive integer string")))
+			})
+		})
+		When("ServiceAccount with unparsable injection mode annotation", func() {
+			It("should raise error", func() {
+				sa = corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:    workloadProvider,
+							saEmailAnnotation:       saEmail,
+							injectionModeAnnotation: "not-valid",
+						},
+					},
+				}
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(idConfig).To(BeNil())
+				Expect(err).To(MatchError(ContainSubstring("mode must be")))
 			})
 		})
 	})

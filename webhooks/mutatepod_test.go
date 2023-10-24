@@ -147,16 +147,16 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						), {
 							Name:         "ctr",
 							Image:        "busybox",
-							VolumeMounts: volumeMountsToAddOrReplace,
+							VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 							Env:          expectedEnvVars,
 						}},
 					Containers: []corev1.Container{{
 						Name:         "ctr",
 						Image:        "busybox",
-						VolumeMounts: volumeMountsToAddOrReplace,
+						VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 						Env:          expectedEnvVars,
 					}},
-					Volumes: volumesToAddOrReplace("my-audience", 3601, defaultMode),
+					Volumes: m.volumesToAddOrReplace("my-audience", 3601, defaultMode, GCloudMode),
 				},
 			}
 			// Expect(pod.Annotations).To(BeEquivalentTo(expected.Annotations))
@@ -210,20 +210,21 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						), {
 							Name:         "ctr",
 							Image:        "busybox",
-							VolumeMounts: volumeMountsToAddOrReplace,
+							VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 						},
 					},
 					Containers: []corev1.Container{{
 						Name:         "ctr",
 						Image:        "busybox",
-						VolumeMounts: volumeMountsToAddOrReplace,
+						VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 					}},
-					Volumes: volumesToAddOrReplace(
+					Volumes: m.volumesToAddOrReplace(
 						m.DefaultAudience,
 						(int64)(m.DefaultTokenExpiration.Seconds()),
 						defaultMode,
+						GCloudMode,
 					),
 				},
 			}

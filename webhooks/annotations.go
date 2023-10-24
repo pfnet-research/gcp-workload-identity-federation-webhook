@@ -31,4 +31,16 @@ const (
 	//
 	// A comma-separated list of container names to skip adding environment variables and volumes to. Applies to `initContainers` and `containers`
 	SkipContainersAnnotation = "skip-containers"
+
+	//
+	// Annotations for Pod
+	//
+	// The External Credentials JSON blob to be injected into the cluster, only used in 'direct' mode.
+	ExternalCredentialsJsonAnnotation = "external-credentials-json"
+
+	//
+	// Annotations for ServiceAccount
+	//
+	// Set to 'direct' or 'gcloud-init' to determine credential injection mode. Defaults to 'gcloud-init'.
+	InjectionModeAnnotation = "injection-mode"
 )
