@@ -6,7 +6,7 @@ const (
 	//
 	// The workloadIdentityProvider annotattion
 	// This must be the format of "projects/{PROJECT_NUMBER}/locations/{LOCATION}/workloadIdentityPools/{POOL_ID}/providers/{PROVIDER_ID}"
-	WorkloadIdeneityProviderAnnotation = "workload-identity-provider"
+	WorkloadIdentityProviderAnnotation = "workload-identity-provider"
 
 	// The serviceaccount email annotation
 	ServiceAccountEmailAnnotation = "service-account-email"

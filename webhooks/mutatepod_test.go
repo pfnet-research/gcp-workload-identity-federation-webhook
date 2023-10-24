@@ -35,7 +35,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	When("passed Pod has unparsed token expiration annotation", func() {
 		It("should reaise error", func() {
 			idConfig := GCPWorkloadIdentityConfig{
-				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
+				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
@@ -56,7 +56,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	When("passed Pod does have conflicted and override fields", func() {
 		It("should replace reqiured fields and override configurations", func() {
 			idConfig := GCPWorkloadIdentityConfig{
-				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
+				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
@@ -138,7 +138,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
-							*idConfig.WorkloadIdeneityProvider,
+							*idConfig.WorkloadIdentityProvider,
 							*idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
@@ -170,7 +170,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	When("passed Pod doesn't have no conflicted and no override fields", func() {
 		It("should mutate required fields", func() {
 			idConfig := GCPWorkloadIdentityConfig{
-				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
+				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 			}
 			pod := &corev1.Pod{
@@ -201,7 +201,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
-							*idConfig.WorkloadIdeneityProvider,
+							*idConfig.WorkloadIdentityProvider,
 							*idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,

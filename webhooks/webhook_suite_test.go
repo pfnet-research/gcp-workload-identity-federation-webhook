@@ -26,7 +26,7 @@ import (
 
 var (
 	annotaitonDomain          = AnnotationDomainDefault
-	idProviderAnnotation      = filepath.Join(annotaitonDomain, WorkloadIdeneityProviderAnnotation)
+	idProviderAnnotation      = filepath.Join(annotaitonDomain, WorkloadIdentityProviderAnnotation)
 	saEmailAnnotation         = filepath.Join(annotaitonDomain, ServiceAccountEmailAnnotation)
 	audienceAnnotation        = filepath.Join(annotaitonDomain, AudienceAnnotation)
 	tokenExpirationAnnotation = filepath.Join(annotaitonDomain, TokenExpirationAnnotation)

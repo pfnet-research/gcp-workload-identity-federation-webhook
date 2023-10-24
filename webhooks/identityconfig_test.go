@@ -42,7 +42,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
-					WorkloadIdeneityProvider: &workloadProvider,
+					WorkloadIdentityProvider: &workloadProvider,
 					ServiceAccountEmail:      &saEmail,
 					Audience:                 nil,
 					TokenExpirationSeconds:   nil,
@@ -64,7 +64,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
-					WorkloadIdeneityProvider: &workloadProvider,
+					WorkloadIdentityProvider: &workloadProvider,
 					ServiceAccountEmail:      &saEmail,
 					Audience:                 &audience,
 					TokenExpirationSeconds:   &tokenExpiration,

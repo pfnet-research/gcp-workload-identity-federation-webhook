@@ -41,7 +41,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	pod.Annotations[filepath.Join(m.AnnotationDomain, WorkloadIdeneityProviderAnnotation)] = *idConfig.WorkloadIdeneityProvider
+	pod.Annotations[filepath.Join(m.AnnotationDomain, WorkloadIdentityProviderAnnotation)] = *idConfig.WorkloadIdentityProvider
 	pod.Annotations[filepath.Join(m.AnnotationDomain, ServiceAccountEmailAnnotation)] = *idConfig.ServiceAccountEmail
 	pod.Annotations[filepath.Join(m.AnnotationDomain, AudienceAnnotation)] = audience
 	pod.Annotations[filepath.Join(m.AnnotationDomain, TokenExpirationAnnotation)] = fmt.Sprint(expirationSeconds)
@@ -66,7 +66,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	// inject gcloud setup initContainer
 	//
 	pod.Spec.InitContainers = prependOrReplaceContainer(pod.Spec.InitContainers, gcloudSetupContainer(
-		*idConfig.WorkloadIdeneityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
+		*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
 	))
 
 	//

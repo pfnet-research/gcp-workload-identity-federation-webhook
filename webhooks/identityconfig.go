@@ -15,7 +15,7 @@ var (
 )
 
 type GCPWorkloadIdentityConfig struct {
-	WorkloadIdeneityProvider *string
+	WorkloadIdentityProvider *string
 	ServiceAccountEmail      *string
 	RunAsUser                *int64
 
@@ -29,8 +29,8 @@ func NewGCPWorkloadIdentityConfig(
 ) (*GCPWorkloadIdentityConfig, error) {
 	cfg := &GCPWorkloadIdentityConfig{}
 
-	if v, ok := sa.Annotations[filepath.Join(annotationDomain, WorkloadIdeneityProviderAnnotation)]; ok {
-		cfg.WorkloadIdeneityProvider = &v
+	if v, ok := sa.Annotations[filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation)]; ok {
+		cfg.WorkloadIdentityProvider = &v
 	}
 
 	if v, ok := sa.Annotations[filepath.Join(annotationDomain, ServiceAccountEmailAnnotation)]; ok {
@@ -57,16 +57,16 @@ func NewGCPWorkloadIdentityConfig(
 		cfg.RunAsUser = &userId
 	}
 
-	if cfg.WorkloadIdeneityProvider == nil && cfg.ServiceAccountEmail == nil {
+	if cfg.WorkloadIdentityProvider == nil && cfg.ServiceAccountEmail == nil {
 		return nil, nil
 	}
 
-	if cfg.WorkloadIdeneityProvider == nil || cfg.ServiceAccountEmail == nil {
-		return nil, fmt.Errorf("%s, %s must set at a time", filepath.Join(annotationDomain, WorkloadIdeneityProviderAnnotation), filepath.Join(annotationDomain, TokenExpirationAnnotation))
+	if cfg.WorkloadIdentityProvider == nil || cfg.ServiceAccountEmail == nil {
+		return nil, fmt.Errorf("%s, %s must set at a time", filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation), filepath.Join(annotationDomain, TokenExpirationAnnotation))
 	}
 
-	if !workloadIdentityProviderRegex.Match([]byte(*cfg.WorkloadIdeneityProvider)) {
-		return nil, fmt.Errorf("%s must be form of %s", filepath.Join(annotationDomain, WorkloadIdeneityProviderAnnotation), workloadIdentityProviderFmt)
+	if !workloadIdentityProviderRegex.Match([]byte(*cfg.WorkloadIdentityProvider)) {
+		return nil, fmt.Errorf("%s must be form of %s", filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation), workloadIdentityProviderFmt)
 	}
 
 	return cfg, nil
