@@ -15,6 +15,7 @@ const (
 
 	// Constants for injected fields
 	DirectInjectedExternalVolumeName = "external-credential-config"
+	DirectInjectedExternalMountPath  = "/var/run/secrets/workload-identity"
 	ExternalCredConfigFilename       = "federation.json"
 	K8sSATokenVolumeName             = "gcp-iam-token"
 	K8sSATokenMountPath              = "/var/run/secrets/sts.googleapis.com/serviceaccount"

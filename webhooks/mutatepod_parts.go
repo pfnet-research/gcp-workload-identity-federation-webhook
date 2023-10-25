@@ -141,7 +141,7 @@ func gcloudSetupContainer(
 var (
 	externalCredConfigVolumeMount = corev1.VolumeMount{
 		Name:      DirectInjectedExternalVolumeName,
-		MountPath: GCloudConfigMountPath,
+		MountPath: DirectInjectedExternalMountPath,
 		ReadOnly:  true,
 	}
 	k8sSATokenVolumeMount = corev1.VolumeMount{
@@ -169,8 +169,6 @@ func volumeMountsToAddOrReplace(mode InjectionMode) []corev1.VolumeMount {
 
 // EnvVars
 var (
-	envVarsToAddOrReplace = []corev1.EnvVar{googleAppCredentialsEnvVar, cloudSDKConfigEnvVar}
-
 	googleAppCredentialsEnvVar = corev1.EnvVar{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
@@ -180,6 +178,25 @@ var (
 		Value: GCloudConfigMountPath,
 	}
 )
+
+func envVarsToAddOrReplace(mode InjectionMode) []corev1.EnvVar {
+	if mode == DirectMode {
+		return []corev1.EnvVar{
+			corev1.EnvVar{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: filepath.Join(DirectInjectedExternalMountPath, ExternalCredConfigFilename),
+			},
+		}
+	} else {
+		return []corev1.EnvVar{
+			corev1.EnvVar{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
+			},
+			cloudSDKConfigEnvVar,
+		}
+	}
+}
 
 func envVarsToAddIfNotPresent(region, project string) []corev1.EnvVar {
 	return []corev1.EnvVar{cloudSDKComputeRegionEnvVar(region), projectEnvVar(project)}

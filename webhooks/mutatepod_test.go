@@ -211,14 +211,14 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 							Name:         "ctr",
 							Image:        "busybox",
 							VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
-							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
+							Env:          append(envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 						},
 					},
 					Containers: []corev1.Container{{
 						Name:         "ctr",
 						Image:        "busybox",
 						VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
-						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
+						Env:          append(envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 					}},
 					Volumes: m.volumesToAddOrReplace(
 						m.DefaultAudience,

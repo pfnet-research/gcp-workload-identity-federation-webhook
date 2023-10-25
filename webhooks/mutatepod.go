@@ -90,7 +90,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		if _, ok := skipContainerNames[ctr.Name]; ok {
 			continue
 		}
-		m.mutateContainer(&ctr, volumeMountsToAddOrReplace(idConfig.InjectionMode), envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
+		m.mutateContainer(&ctr, volumeMountsToAddOrReplace(idConfig.InjectionMode), envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
 		pod.Spec.InitContainers[i] = ctr
 	}
 	for i := range pod.Spec.Containers {
@@ -98,7 +98,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		if _, ok := skipContainerNames[ctr.Name]; ok {
 			continue
 		}
-		m.mutateContainer(&ctr, volumeMountsToAddOrReplace(idConfig.InjectionMode), envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
+		m.mutateContainer(&ctr, volumeMountsToAddOrReplace(idConfig.InjectionMode), envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
 		pod.Spec.Containers[i] = ctr
 	}
 
