@@ -133,6 +133,100 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
 
 When running a container with a non-root user, you need to give user id for GCloud SDK container using the annotation `cloud.google.com/gcloud-run-as-user` in the service account.
 
+## Experimental Direct Credential Injection Mode
+
+In this mode, the Workload Identity Federation Webhook controller directly generates the Gcloud external credentials configuration and injects into the pod.
+This means the `gcloud-setup` init container is not required which can speed up pod start time.
+
+To use direct injection mode:
+
+1. Annotate a Kubernetes `ServiceAccount` with the `injection-mode` value of `direct`.
+
+    ```yaml
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: app-x
+      namespace: service-a
+      annotations:
+        ...
+
+        # optional: Set the injection mode to 'direct', instead of 'gcloud'.
+        cloud.google.com/injection-mode: "direct"
+    ```
+
+2. Below is an example pod spec with the environment variables and volume fields mutated by the webhook. Notice there is no `gcloud-setup` init container or Volumes, instead there is an extra annotation and `external-credential-config` volume and volumeMount.
+
+    ```yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: app-x-pod
+      namespace: service-a
+    annotations:
+      # optional: A comma-separated list of initContainers and container names
+      #   to skip adding volumeMounts and environment variables
+      cloud.google.com/skip-containers: "init-first,sidecar"
+      #
+      # The Generated External Credentials Json is added as an annotation, and mounted into the container filesystem via the DownwardAPI Volume
+      # 
+      cloud.google.com/external-credentials-json: |-
+        {
+          "type": "external_account",
+          "audience": "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster",
+          "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+          "token_url": "https://sts.googleapis.com/v1/token",
+          "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/app-x@project.iam.gserviceaccount.com:generateAccessToken",
+          "credential_source": {
+            "file": "/var/run/secrets/sts.googleapis.com/serviceaccount/token",
+            "format": {
+              "type": "text"
+            }
+          }
+        }
+    spec:
+      serviceAccountName: app-x
+      initContainers:
+      - name: init-first
+        image: container-image:version
+      containers:
+      - name: sidecar
+        image: container-image:version
+      - name: container-name
+        image: container-image:version
+        ### Everything below is added by the webhook ###
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/run/secrets/gcloud/config/federation.json
+        - name: CLOUDSDK_CONFIG
+          value: /var/run/secrets/gcloud/config
+        - name: CLOUDSDK_COMPUTE_REGION
+          value: asia-northeast1
+        volumeMounts:
+        - name: gcp-iam-token
+          readOnly: true
+          mountPath: /var/run/secrets/sts.googleapis.com/serviceaccount
+        - mountPath: /var/run/secrets/gcloud/config
+          name: external-credential-config
+          readOnly: true
+      volumes:
+      - name: gcp-iam-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: sts.googleapis.com
+              expirationSeconds: 86400
+              path: token
+      - downwardAPI:
+          defaultMode: 288
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.annotations['cloud.google.com/external-credentials-json']
+            path: federation.json
+        name: external-credential-config
+    ```
+
 ## Usage
 
 ```console
