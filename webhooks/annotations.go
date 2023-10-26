@@ -41,6 +41,6 @@ const (
 	//
 	// Annotations for ServiceAccount
 	//
-	// Set to 'direct' or 'gcloud-init' to determine credential injection mode. Defaults to 'gcloud-init'.
+	// Set to 'direct' or 'gcloud' to determine credential injection mode. Defaults to 'gcloud'.
 	InjectionModeAnnotation = "injection-mode"
 )
