@@ -3,7 +3,6 @@ package webhooks
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"path/filepath"
 )
 
@@ -70,12 +69,11 @@ func NewExternalAccountCredentials(aud, gsaEmail string) *ExternalAccountCredent
 	return creds
 }
 
-func (e *ExternalAccountCredentials) String() string {
+func (e *ExternalAccountCredentials) Render() (string, error) {
 	b, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
-		log.Printf("could not marshal ")
-		return ""
+		return "", fmt.Errorf("could not marshal ExternalAccountCredentials to json: %v", err)
 	}
 
-	return string(b)
+	return string(b), nil
 }

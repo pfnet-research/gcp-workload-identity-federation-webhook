@@ -48,7 +48,11 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	pod.Annotations[filepath.Join(m.AnnotationDomain, TokenExpirationAnnotation)] = fmt.Sprint(expirationSeconds)
 	if idConfig.InjectionMode == DirectMode {
 		// Add annotation
-		pod.Annotations[filepath.Join(m.AnnotationDomain, ExternalCredentialsJsonAnnotation)] = buildExternalCredentialsJson(*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail)
+		credBody, err := buildExternalCredentialsJson(*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail)
+		if err != nil {
+			return err
+		}
+		pod.Annotations[filepath.Join(m.AnnotationDomain, ExternalCredentialsJsonAnnotation)] = credBody
 	}
 
 	//
@@ -105,10 +109,14 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	return nil
 }
 
-func buildExternalCredentialsJson(wiProvider, gsaEmail string) string {
+func buildExternalCredentialsJson(wiProvider, gsaEmail string) (string, error) {
 	aud := fmt.Sprintf("//iam.googleapis.com/%s", wiProvider)
 	creds := NewExternalAccountCredentials(aud, gsaEmail)
-	return heredoc.Doc(creds.String())
+	credJson, err := creds.Render()
+	if err != nil {
+		return "", err
+	}
+	return heredoc.Doc(credJson), nil
 }
 
 func (m *GCPWorkloadIdentityMutator) mutateContainer(

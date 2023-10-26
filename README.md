@@ -151,7 +151,9 @@ To use direct injection mode:
       annotations:
         ...
 
-        # optional: Set the injection mode to 'direct', instead of 'gcloud'.
+        # optional: gcloud external configuration injection mode.
+        #           The value must be one of 'gcloud'(default) or 'direct'.
+        #           Refer to the next section for 'direct' injection mode
         cloud.google.com/injection-mode: "direct"
     ```
 

@@ -230,6 +230,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 
 			Expect(k8sClient.Create(ctx, pod)).NotTo(HaveOccurred())
 			m := GCPWorkloadIdentityMutator{AnnotationDomain: AnnotationDomainDefault}
+			externalCreds, _ := buildExternalCredentialsJson(workloadProvider, saEmail)
 			expected := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -237,7 +238,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 						saEmailAnnotation:         saEmail,
 						audienceAnnotation:        audience,
 						tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
-						externalConfigAnnotation:  buildExternalCredentialsJson(workloadProvider, saEmail),
+						externalConfigAnnotation:  externalCreds,
 					},
 				},
 				Spec: corev1.PodSpec{
