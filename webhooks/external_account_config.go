@@ -69,8 +69,16 @@ func NewExternalAccountCredentials(aud, gsaEmail string) *ExternalAccountCredent
 	return creds
 }
 
-func (e *ExternalAccountCredentials) Render() (string, error) {
-	b, err := json.MarshalIndent(e, "", "  ")
+// Render marshals the ExternalAccountCredentials object to a json string. Set indent = true to pretty print the
+// json with indentation.
+func (e *ExternalAccountCredentials) Render(indent bool) (string, error) {
+	var b []byte
+	var err error
+	if indent {
+		b, err = json.MarshalIndent(e, "", "  ")
+	} else {
+		b, err = json.Marshal(e)
+	}
 	if err != nil {
 		return "", fmt.Errorf("could not marshal ExternalAccountCredentials to json: %v", err)
 	}

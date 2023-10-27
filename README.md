@@ -47,6 +47,11 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
         # optional: This value defines the container security context with runAsUser
         #           with the defined user. This could avoid problems related with root requirement from gcloud image
         cloud.google.com/gcloud-run-as-user: "1000"
+   
+        # optional: gcloud external configuration injection mode.
+        #           The value must be one of 'gcloud'(default) or 'direct'.
+        #           Refer to the next section for 'direct' injection mode
+        cloud.google.com/injection-mode: "gcloud"
     ```
 
 4. All new pods launched using the Kubernetes `ServiceAccount` will be mutated so that they can impersonate the GCP service account. Below is an example pod spec with the environment variables and volume fields mutated by the webhook.
@@ -149,11 +154,8 @@ To use direct injection mode:
       name: app-x
       namespace: service-a
       annotations:
-        ...
 
-        # optional: gcloud external configuration injection mode.
-        #           The value must be one of 'gcloud'(default) or 'direct'.
-        #           Refer to the next section for 'direct' injection mode
+        # Set the injection mode to 'direct', instead of 'gcloud'.
         cloud.google.com/injection-mode: "direct"
     ```
 

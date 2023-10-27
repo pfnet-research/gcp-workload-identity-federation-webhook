@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MakeNowJust/heredoc"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -112,11 +111,11 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 func buildExternalCredentialsJson(wiProvider, gsaEmail string) (string, error) {
 	aud := fmt.Sprintf("//iam.googleapis.com/%s", wiProvider)
 	creds := NewExternalAccountCredentials(aud, gsaEmail)
-	credJson, err := creds.Render()
+	credJson, err := creds.Render(false)
 	if err != nil {
 		return "", err
 	}
-	return heredoc.Doc(credJson), nil
+	return credJson, nil
 }
 
 func (m *GCPWorkloadIdentityMutator) mutateContainer(

@@ -37,7 +37,7 @@ func TestExternalAccountCredentials_Render(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := NewExternalAccountCredentials(tt.fields.Audience, tt.fields.GSAEmail)
-			got, err := e.Render()
+			got, err := e.Render(true)
 			if err != nil && !tt.wantErr {
 				t.Errorf("ExternalAccountCredentials.Render() returned unexpected error: %v", err)
 			}
