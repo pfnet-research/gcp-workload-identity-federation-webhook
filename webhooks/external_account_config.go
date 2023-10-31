@@ -80,7 +80,7 @@ func (e *ExternalAccountCredentials) Render(indent bool) (string, error) {
 		b, err = json.Marshal(e)
 	}
 	if err != nil {
-		return "", fmt.Errorf("could not marshal ExternalAccountCredentials to json: %v", err)
+		return "", fmt.Errorf("could not marshal ExternalAccountCredentials to json: %w", err)
 	}
 
 	return string(b), nil
