@@ -1,6 +1,8 @@
 module github.pfidev.jp/kubernetes/gcp-workload-identity-federation-webhook
 
-go 1.18
+go 1.21
+
+toolchain go1.21.3
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
