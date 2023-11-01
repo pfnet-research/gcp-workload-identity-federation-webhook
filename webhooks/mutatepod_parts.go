@@ -168,32 +168,24 @@ func volumeMountsToAddOrReplace(mode InjectionMode) []corev1.VolumeMount {
 }
 
 // EnvVars
-var (
-	googleAppCredentialsEnvVar = corev1.EnvVar{
-		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-		Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
-	}
-	cloudSDKConfigEnvVar = corev1.EnvVar{
-		Name:  "CLOUDSDK_CONFIG",
-		Value: GCloudConfigMountPath,
-	}
-)
-
 func envVarsToAddOrReplace(mode InjectionMode) []corev1.EnvVar {
 	if mode == DirectMode {
 		return []corev1.EnvVar{
-			corev1.EnvVar{
+			{
 				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 				Value: filepath.Join(DirectInjectedExternalMountPath, ExternalCredConfigFilename),
 			},
 		}
 	} else {
 		return []corev1.EnvVar{
-			corev1.EnvVar{
+			{
 				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 				Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
 			},
-			cloudSDKConfigEnvVar,
+			{
+				Name:  "CLOUDSDK_CONFIG",
+				Value: GCloudConfigMountPath,
+			},
 		}
 	}
 }

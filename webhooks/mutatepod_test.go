@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"fmt"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -121,9 +122,15 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			expectedEnvVars := []corev1.EnvVar{
-				googleAppCredentialsEnvVar,
+				{
+					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+					Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
+				},
 				cloudSDKComputeRegionEnvVar("not-to-be-replaced"),
-				cloudSDKConfigEnvVar,
+				{
+					Name:  "CLOUDSDK_CONFIG",
+					Value: GCloudConfigMountPath,
+				},
 				projectEnvVar(project),
 			}
 			expected := &corev1.Pod{
