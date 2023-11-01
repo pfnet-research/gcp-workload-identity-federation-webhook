@@ -41,10 +41,18 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	pod.Annotations[filepath.Join(m.AnnotationDomain, WorkloadIdeneityProviderAnnotation)] = *idConfig.WorkloadIdeneityProvider
+	pod.Annotations[filepath.Join(m.AnnotationDomain, WorkloadIdentityProviderAnnotation)] = *idConfig.WorkloadIdentityProvider
 	pod.Annotations[filepath.Join(m.AnnotationDomain, ServiceAccountEmailAnnotation)] = *idConfig.ServiceAccountEmail
 	pod.Annotations[filepath.Join(m.AnnotationDomain, AudienceAnnotation)] = audience
 	pod.Annotations[filepath.Join(m.AnnotationDomain, TokenExpirationAnnotation)] = fmt.Sprint(expirationSeconds)
+	if idConfig.InjectionMode == DirectMode {
+		// Add annotation
+		credBody, err := buildExternalCredentialsJson(*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail)
+		if err != nil {
+			return err
+		}
+		pod.Annotations[filepath.Join(m.AnnotationDomain, ExternalCredentialsJsonAnnotation)] = credBody
+	}
 
 	//
 	// calculate project from service account
@@ -58,16 +66,18 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	//
 	// mutate volumes(k8s sa token volume, gcloud config volume)
 	//
-	for _, v := range volumesToAddOrReplace(audience, expirationSeconds, int32(m.DefaultMode)) {
+	for _, v := range m.volumesToAddOrReplace(audience, expirationSeconds, int32(m.DefaultMode), idConfig.InjectionMode) {
 		pod.Spec.Volumes = addOrReplaceVolume(pod.Spec.Volumes, v)
 	}
 
 	//
 	// inject gcloud setup initContainer
 	//
-	pod.Spec.InitContainers = prependOrReplaceContainer(pod.Spec.InitContainers, gcloudSetupContainer(
-		*idConfig.WorkloadIdeneityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
-	))
+	if idConfig.InjectionMode == GCloudMode || idConfig.InjectionMode == UndefinedMode {
+		pod.Spec.InitContainers = prependOrReplaceContainer(pod.Spec.InitContainers, gcloudSetupContainer(
+			*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
+		))
+	}
 
 	//
 	// mutate InitContainers/Containers
@@ -83,7 +93,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		if _, ok := skipContainerNames[ctr.Name]; ok {
 			continue
 		}
-		m.mutateContainer(&ctr, volumeMountsToAddOrReplace, envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
+		m.mutateContainer(&ctr, volumeMountsToAddOrReplace(idConfig.InjectionMode), envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
 		pod.Spec.InitContainers[i] = ctr
 	}
 	for i := range pod.Spec.Containers {
@@ -91,11 +101,21 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		if _, ok := skipContainerNames[ctr.Name]; ok {
 			continue
 		}
-		m.mutateContainer(&ctr, volumeMountsToAddOrReplace, envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
+		m.mutateContainer(&ctr, volumeMountsToAddOrReplace(idConfig.InjectionMode), envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project))
 		pod.Spec.Containers[i] = ctr
 	}
 
 	return nil
+}
+
+func buildExternalCredentialsJson(wiProvider, gsaEmail string) (string, error) {
+	aud := fmt.Sprintf("//iam.googleapis.com/%s", wiProvider)
+	creds := NewExternalAccountCredentials(aud, gsaEmail)
+	credJson, err := creds.Render(false)
+	if err != nil {
+		return "", err
+	}
+	return credJson, nil
 }
 
 func (m *GCPWorkloadIdentityMutator) mutateContainer(

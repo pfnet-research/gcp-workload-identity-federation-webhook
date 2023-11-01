@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"fmt"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,7 +36,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	When("passed Pod has unparsed token expiration annotation", func() {
 		It("should reaise error", func() {
 			idConfig := GCPWorkloadIdentityConfig{
-				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
+				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
@@ -56,7 +57,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	When("passed Pod does have conflicted and override fields", func() {
 		It("should replace reqiured fields and override configurations", func() {
 			idConfig := GCPWorkloadIdentityConfig{
-				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
+				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 				Audience:                 pointer.String("my-audience"),
 				TokenExpirationSeconds:   pointer.Int64(10000),
@@ -121,9 +122,15 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			expectedEnvVars := []corev1.EnvVar{
-				googleAppCredentialsEnvVar,
+				{
+					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+					Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
+				},
 				cloudSDKComputeRegionEnvVar("not-to-be-replaced"),
-				cloudSDKConfigEnvVar,
+				{
+					Name:  "CLOUDSDK_CONFIG",
+					Value: GCloudConfigMountPath,
+				},
 				projectEnvVar(project),
 			}
 			expected := &corev1.Pod{
@@ -138,7 +145,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
-							*idConfig.WorkloadIdeneityProvider,
+							*idConfig.WorkloadIdentityProvider,
 							*idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
@@ -147,16 +154,16 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						), {
 							Name:         "ctr",
 							Image:        "busybox",
-							VolumeMounts: volumeMountsToAddOrReplace,
+							VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 							Env:          expectedEnvVars,
 						}},
 					Containers: []corev1.Container{{
 						Name:         "ctr",
 						Image:        "busybox",
-						VolumeMounts: volumeMountsToAddOrReplace,
+						VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 						Env:          expectedEnvVars,
 					}},
-					Volumes: volumesToAddOrReplace("my-audience", 3601, defaultMode),
+					Volumes: m.volumesToAddOrReplace("my-audience", 3601, defaultMode, GCloudMode),
 				},
 			}
 			// Expect(pod.Annotations).To(BeEquivalentTo(expected.Annotations))
@@ -170,7 +177,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	When("passed Pod doesn't have no conflicted and no override fields", func() {
 		It("should mutate required fields", func() {
 			idConfig := GCPWorkloadIdentityConfig{
-				WorkloadIdeneityProvider: &workloadIdentityProviderFmt,
+				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
 				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 			}
 			pod := &corev1.Pod{
@@ -201,7 +208,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
-							*idConfig.WorkloadIdeneityProvider,
+							*idConfig.WorkloadIdentityProvider,
 							*idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
@@ -210,20 +217,21 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 						), {
 							Name:         "ctr",
 							Image:        "busybox",
-							VolumeMounts: volumeMountsToAddOrReplace,
-							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
+							VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
+							Env:          append(envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 						},
 					},
 					Containers: []corev1.Container{{
 						Name:         "ctr",
 						Image:        "busybox",
-						VolumeMounts: volumeMountsToAddOrReplace,
-						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
+						VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
+						Env:          append(envVarsToAddOrReplace(idConfig.InjectionMode), envVarsToAddIfNotPresent(m.DefaultGCloudRegion, project)...),
 					}},
-					Volumes: volumesToAddOrReplace(
+					Volumes: m.volumesToAddOrReplace(
 						m.DefaultAudience,
 						(int64)(m.DefaultTokenExpiration.Seconds()),
 						defaultMode,
+						GCloudMode,
 					),
 				},
 			}

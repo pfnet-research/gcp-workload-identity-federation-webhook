@@ -1,6 +1,7 @@
 package webhooks
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/MakeNowJust/heredoc"
@@ -20,12 +21,21 @@ var (
 	}
 )
 
-func volumesToAddOrReplace(
+func (m *GCPWorkloadIdentityMutator) volumesToAddOrReplace(
 	audience string,
 	expirationSeconds int64,
 	defaultMode int32,
+	mode InjectionMode,
 ) []corev1.Volume {
-	return []corev1.Volume{k8sSATokenVolume(audience, expirationSeconds, defaultMode), gcloudConfigVolume}
+	vols := []corev1.Volume{k8sSATokenVolume(audience, expirationSeconds, defaultMode)}
+
+	if mode == DirectMode {
+		vols = append(vols, m.externalCredConfigVolume(defaultMode))
+	} else {
+		vols = append(vols, gcloudConfigVolume)
+	}
+
+	return vols
 }
 
 func k8sSATokenVolume(
@@ -44,6 +54,27 @@ func k8sSATokenVolume(
 						Path:              K8sSATokenName,
 					},
 				}},
+				DefaultMode: pointer.Int32(defaultMode),
+			},
+		},
+	}
+}
+
+func (m *GCPWorkloadIdentityMutator) externalCredConfigVolume(defaultMode int32) corev1.Volume {
+	annoKey := fmt.Sprintf("%s/%s", m.AnnotationDomain, ExternalCredentialsJsonAnnotation)
+	return corev1.Volume{
+		Name: DirectInjectedExternalVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			DownwardAPI: &corev1.DownwardAPIVolumeSource{
+				Items: []corev1.DownwardAPIVolumeFile{
+					{
+						Path: ExternalCredConfigFilename,
+						FieldRef: &corev1.ObjectFieldSelector{
+							APIVersion: "v1",
+							FieldPath:  fmt.Sprintf("metadata.annotations['%s']", annoKey),
+						},
+					},
+				},
 				DefaultMode: pointer.Int32(defaultMode),
 			},
 		},
@@ -79,12 +110,15 @@ func gcloudSetupContainer(
 				gcloud iam workload-identity-pools create-cred-config \
 				  $(GCP_WORKLOAD_IDENTITY_PROVIDER) \
 				  --service-account=$(GCP_SERVICE_ACCOUNT) \
-				  --output-file=$(CLOUDSDK_CONFIG)/federation.json \
+				  --output-file=$(CLOUDSDK_CONFIG)/%s \
 				  --credential-source-file=%s
-				gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
-			`, filepath.Join(K8sSATokenMountPath, K8sSATokenName)),
+				gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/%s
+			`, filepath.Join(K8sSATokenMountPath, K8sSATokenName),
+				ExternalCredConfigFilename,
+				ExternalCredConfigFilename,
+			),
 		},
-		VolumeMounts: volumeMountsToAddOrReplace,
+		VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
 		Env: []corev1.EnvVar{{
 			Name:  "GCP_WORKLOAD_IDENTITY_PROVIDER",
 			Value: workloadIdProvider,
@@ -93,7 +127,7 @@ func gcloudSetupContainer(
 			Value: saEmail,
 		}, {
 			Name:  "CLOUDSDK_CONFIG",
-			Value: GCloudConifgMountPath,
+			Value: GCloudConfigMountPath,
 		}, projectEnvVar(project)},
 		SecurityContext: securityContext,
 	}
@@ -105,8 +139,11 @@ func gcloudSetupContainer(
 
 // VolumeMounts
 var (
-	volumeMountsToAddOrReplace = []corev1.VolumeMount{k8sSATokenVolumeMount, gcloudConfigVolumeMount}
-
+	externalCredConfigVolumeMount = corev1.VolumeMount{
+		Name:      DirectInjectedExternalVolumeName,
+		MountPath: DirectInjectedExternalMountPath,
+		ReadOnly:  true,
+	}
 	k8sSATokenVolumeMount = corev1.VolumeMount{
 		Name:      K8sSATokenVolumeName,
 		MountPath: K8sSATokenMountPath,
@@ -114,23 +151,44 @@ var (
 	}
 	gcloudConfigVolumeMount = corev1.VolumeMount{
 		Name:      GCloudConfigVolumeName,
-		MountPath: GCloudConifgMountPath,
+		MountPath: GCloudConfigMountPath,
 	}
 )
+
+func volumeMountsToAddOrReplace(mode InjectionMode) []corev1.VolumeMount {
+	volMounts := []corev1.VolumeMount{k8sSATokenVolumeMount}
+
+	if mode == DirectMode {
+		volMounts = append(volMounts, externalCredConfigVolumeMount)
+	} else {
+		volMounts = append(volMounts, gcloudConfigVolumeMount)
+	}
+
+	return volMounts
+}
 
 // EnvVars
-var (
-	envVarsToAddOrReplace = []corev1.EnvVar{googleAppCredentialsEnvVar, cloudSDKConfigEnvVar}
-
-	googleAppCredentialsEnvVar = corev1.EnvVar{
-		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-		Value: filepath.Join(GCloudConifgMountPath, "federation.json"),
+func envVarsToAddOrReplace(mode InjectionMode) []corev1.EnvVar {
+	if mode == DirectMode {
+		return []corev1.EnvVar{
+			{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: filepath.Join(DirectInjectedExternalMountPath, ExternalCredConfigFilename),
+			},
+		}
+	} else {
+		return []corev1.EnvVar{
+			{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
+			},
+			{
+				Name:  "CLOUDSDK_CONFIG",
+				Value: GCloudConfigMountPath,
+			},
+		}
 	}
-	cloudSDKConfigEnvVar = corev1.EnvVar{
-		Name:  "CLOUDSDK_CONFIG",
-		Value: GCloudConifgMountPath,
-	}
-)
+}
 
 func envVarsToAddIfNotPresent(region, project string) []corev1.EnvVar {
 	return []corev1.EnvVar{cloudSDKComputeRegionEnvVar(region), projectEnvVar(project)}

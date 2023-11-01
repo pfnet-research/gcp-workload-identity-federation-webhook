@@ -14,10 +14,13 @@ const (
 	SetupContainerResources       = ""
 
 	// Constants for injected fields
-	K8sSATokenVolumeName         = "gcp-iam-token"
-	K8sSATokenMountPath          = "/var/run/secrets/sts.googleapis.com/serviceaccount"
-	K8sSATokenName               = "token"
-	GCloudConfigVolumeName       = "gcloud-config"
-	GCloudConifgMountPath        = "/var/run/secrets/gcloud/config"
-	GCloudSetupInitContainerName = "gcloud-setup"
+	DirectInjectedExternalVolumeName = "external-credential-config"
+	DirectInjectedExternalMountPath  = "/var/run/secrets/workload-identity"
+	ExternalCredConfigFilename       = "federation.json"
+	K8sSATokenVolumeName             = "gcp-iam-token"
+	K8sSATokenMountPath              = "/var/run/secrets/sts.googleapis.com/serviceaccount"
+	K8sSATokenName                   = "token"
+	GCloudConfigVolumeName           = "gcloud-config"
+	GCloudConfigMountPath            = "/var/run/secrets/gcloud/config"
+	GCloudSetupInitContainerName     = "gcloud-setup"
 )

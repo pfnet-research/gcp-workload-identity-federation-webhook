@@ -22,6 +22,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 	var runAsUser int64 = 1000
 
 	var sa corev1.ServiceAccount
+	var saDirect corev1.ServiceAccount
 
 	BeforeEach(func() {
 		sa = corev1.ServiceAccount{
@@ -38,10 +39,27 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 			},
 		}
 		Expect(k8sClient.Create(ctx, &sa)).NotTo(HaveOccurred())
+		// Direct Inject Service Account
+		saDirect = corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      "direct",
+				Annotations: map[string]string{
+					idProviderAnnotation:      workloadProvider,
+					saEmailAnnotation:         saEmail,
+					audienceAnnotation:        audience,
+					tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+					runAsUserAnnotation:       fmt.Sprint(runAsUser),
+					injectionModeAnnotation:   string(DirectMode),
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &saDirect)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, &sa)).NotTo(HaveOccurred())
+		Expect(k8sClient.Delete(ctx, &saDirect)).NotTo(HaveOccurred())
 		Expect(k8sClient.DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace(namespace)))
 	})
 
@@ -66,7 +84,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 			}
 
 			Expect(k8sClient.Create(ctx, pod)).NotTo(HaveOccurred())
-
+			m := GCPWorkloadIdentityMutator{AnnotationDomain: AnnotationDomainDefault}
 			expected := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -89,17 +107,17 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 						)), decorateDefault(corev1.Container{
 							Name:         "ictr",
 							Image:        "busybox:test",
-							VolumeMounts: volumeMountsToAddOrReplace,
-							Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
+							VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
+							Env:          append(envVarsToAddOrReplace(GCloudMode), envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
 						}),
 					},
 					Containers: []corev1.Container{decorateDefault(corev1.Container{
 						Name:         "ctr",
 						Image:        "busybox:test",
-						VolumeMounts: volumeMountsToAddOrReplace,
-						Env:          append(envVarsToAddOrReplace, envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
+						VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
+						Env:          append(envVarsToAddOrReplace(GCloudMode), envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
 					})},
-					Volumes: volumesToAddOrReplace(audience, tokenExpiration, VolumeModeDefault),
+					Volumes: m.volumesToAddOrReplace(audience, tokenExpiration, VolumeModeDefault, GCloudMode),
 				},
 			}
 
@@ -188,6 +206,66 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 				Expect(pod.Spec.InitContainers).To(BeEquivalentTo(expected.Spec.InitContainers))
 				Expect(pod.Spec.Containers).To(BeEquivalentTo(expected.Spec.Containers))
 			})
+		})
+	})
+	Describe("Direct Injection Case", func() {
+		It("should inject external cred configurations via annotation & downwardAPI Volume", func() {
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "test-pod",
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "direct",
+					InitContainers: []corev1.Container{{
+						Name:  "ictr",
+						Image: "busybox:test",
+					}},
+					Containers: []corev1.Container{{
+						Name:  "ctr",
+						Image: "busybox:test",
+					}},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, pod)).NotTo(HaveOccurred())
+			m := GCPWorkloadIdentityMutator{AnnotationDomain: AnnotationDomainDefault}
+			externalCreds, _ := buildExternalCredentialsJson(workloadProvider, saEmail)
+			expected := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						idProviderAnnotation:      workloadProvider,
+						saEmailAnnotation:         saEmail,
+						audienceAnnotation:        audience,
+						tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+						externalConfigAnnotation:  externalCreds,
+					},
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "direct",
+					InitContainers: []corev1.Container{
+						decorateDefault(corev1.Container{
+							Name:         "ictr",
+							Image:        "busybox:test",
+							VolumeMounts: volumeMountsToAddOrReplace(DirectMode),
+							Env:          append(envVarsToAddOrReplace(DirectMode), envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
+						}),
+					},
+					Containers: []corev1.Container{decorateDefault(corev1.Container{
+						Name:         "ctr",
+						Image:        "busybox:test",
+						VolumeMounts: volumeMountsToAddOrReplace(DirectMode),
+						Env:          append(envVarsToAddOrReplace(DirectMode), envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
+					})},
+					Volumes: m.volumesToAddOrReplace(audience, tokenExpiration, VolumeModeDefault, DirectMode),
+				},
+			}
+
+			Expect(pod.Annotations).To(BeEquivalentTo(expected.Annotations))
+			Expect(pod.Spec.ServiceAccountName).To(BeEquivalentTo(expected.Spec.ServiceAccountName))
+			Expect(pod.Spec.Volumes).To(BeEquivalentTo(expected.Spec.Volumes))
+			Expect(pod.Spec.InitContainers).To(BeEquivalentTo(expected.Spec.InitContainers))
+			Expect(pod.Spec.Containers).To(BeEquivalentTo(expected.Spec.Containers))
 		})
 	})
 })
