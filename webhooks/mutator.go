@@ -14,16 +14,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-)
-
-var (
-	_ inject.Logger             = &GCPWorkloadIdentityMutator{}
-	_ inject.Client             = &GCPWorkloadIdentityMutator{}
-	_ admission.Handler         = &GCPWorkloadIdentityMutator{}
-	_ admission.DecoderInjector = &GCPWorkloadIdentityMutator{}
 )
 
 // +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,name=mpod.kb.io,admissionReviewVersions=v1,sideEffects=None
@@ -48,11 +40,8 @@ type GCPWorkloadIdentityMutator struct {
 
 // Handle implements admission.Handler
 func (m *GCPWorkloadIdentityMutator) Handle(ctx context.Context, ar admission.Request) admission.Response {
-	var err error
 	pod := &corev1.Pod{}
-
-	err = m.decoder.Decode(ar, pod)
-	if err != nil {
+	if err := m.decoder.Decode(ar, pod); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	logger := m.logger.WithValues("Pod", pod.Namespace+"/"+pod.Name)
@@ -63,7 +52,7 @@ func (m *GCPWorkloadIdentityMutator) Handle(ctx context.Context, ar admission.Re
 	}
 
 	sa := corev1.ServiceAccount{}
-	err = m.Get(ctx, types.NamespacedName{Namespace: ar.Namespace, Name: pod.Spec.ServiceAccountName}, &sa)
+	err := m.Get(ctx, types.NamespacedName{Namespace: ar.Namespace, Name: pod.Spec.ServiceAccountName}, &sa)
 	if err != nil && apierrors.IsNotFound(err) {
 		logger.V(2).Info("Skip processing because ServiceAccount is not found", "ServiceAccount", pod.Spec.ServiceAccountName)
 		return admission.Allowed("Skip processing because ServiceAccount is not found")
@@ -102,24 +91,13 @@ func (m *GCPWorkloadIdentityMutator) SetupWithManager(ctx context.Context, mgr c
 	}
 	saInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{})
 
-	mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{Handler: m})
-	return nil
-}
+	// Inject logger, decoder, and client.
+	m.logger = mgr.GetLogger()
+	m.decoder = admission.NewDecoder(mgr.GetScheme())
+	m.Client = mgr.GetClient()
 
-// InjectClient implements inject.Client
-func (m *GCPWorkloadIdentityMutator) InjectClient(c client.Client) error {
-	m.Client = c
-	return nil
-}
-
-// InjectLogger implements inject.Logger
-func (m *GCPWorkloadIdentityMutator) InjectLogger(l logr.Logger) error {
-	m.logger = l.WithName("gcp-wrokload-identity-mutator")
-	return nil
-}
-
-// InjectDecoder implements admission.DecoderInjector
-func (m *GCPWorkloadIdentityMutator) InjectDecoder(d *admission.Decoder) error {
-	m.decoder = d
+	mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{
+		Handler: m,
+	})
 	return nil
 }
