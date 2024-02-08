@@ -113,8 +113,8 @@ func gcloudSetupContainer(
 				  --output-file=$(CLOUDSDK_CONFIG)/%s \
 				  --credential-source-file=%s
 				gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/%s
-			`, filepath.Join(K8sSATokenMountPath, K8sSATokenName),
-				ExternalCredConfigFilename,
+			`, ExternalCredConfigFilename,
+				filepath.Join(K8sSATokenMountPath, K8sSATokenName),
 				ExternalCredConfigFilename,
 			),
 		},
