@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -85,11 +84,6 @@ func main() {
 		Metrics: metricsserver.Options{
 			BindAddress: *metricsAddr,
 		},
-		WebhookServer: webhook.NewServer(
-			webhook.Options{
-				Port: 944,
-			},
-		),
 		HealthProbeBindAddress: *probeAddr,
 	})
 	if err != nil {
