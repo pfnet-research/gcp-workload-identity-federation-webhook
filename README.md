@@ -29,7 +29,7 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
       name: app-x
       namespace: service-a
       annotations:
-        # assume 
+        # assume
         #   you grant k8s service account "service-a/app-x" to impersonate "app-x" GCP service account
         #   this k8s cluster's service account belongs the annotated workload identity provider here
         cloud.google.com/workload-identity-provider: "projects/12345/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster"
@@ -40,14 +40,14 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
         cloud.google.com/audience: "sts.googleapis.com"
 
         # optional: Defaults to 86400 for expirationSeconds if not set
-        #   Note: This value can be overwritten if specified in the pod 
+        #   Note: This value can be overwritten if specified in the pod
         #         annotation as shown in the next step.
         cloud.google.com/token-expiration: "86400"
 
         # optional: This value defines the container security context with runAsUser
         #           with the defined user. This could avoid problems related with root requirement from gcloud image
         cloud.google.com/gcloud-run-as-user: "1000"
-   
+
         # optional: gcloud external configuration injection mode.
         #           The value must be one of 'gcloud'(default) or 'direct'.
         #           Refer to the next section for 'direct' injection mode
@@ -173,7 +173,7 @@ To use direct injection mode:
       cloud.google.com/skip-containers: "init-first,sidecar"
       #
       # The Generated External Credentials Json is added as an annotation, and mounted into the container filesystem via the DownwardAPI Volume
-      # 
+      #
       cloud.google.com/external-credentials-json: |-
         {
           "type": "external_account",
@@ -202,8 +202,6 @@ To use direct injection mode:
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/run/secrets/gcloud/config/federation.json
-        - name: CLOUDSDK_CONFIG
-          value: /var/run/secrets/gcloud/config
         - name: CLOUDSDK_COMPUTE_REGION
           value: asia-northeast1
         volumeMounts:
