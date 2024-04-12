@@ -1,4 +1,4 @@
-module github.pfidev.jp/kubernetes/gcp-workload-identity-federation-webhook
+module github.com/pfnet-research/gcp-workload-identity-federation-webhook
 
 go 1.21
 
