@@ -2,5 +2,5 @@ domain: pfnet-research.github.com
 layout:
 - go.kubebuilder.io/v3
 projectName: gcp-workload-identity-webhook
-repo: github.pfidev.jp/kubernetes/gcp-workload-identity-federation-webhook
+repo: github.com/pfnet-research/gcp-workload-identity-federation-webhook
 version: "3"
