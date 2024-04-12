@@ -25,7 +25,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.pfidev.jp/kubernetes/gcp-workload-identity-federation-webhook/webhooks"
+	"github.com/pfnet-research/gcp-workload-identity-federation-webhook/webhooks"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
