@@ -89,7 +89,11 @@ func (m *GCPWorkloadIdentityMutator) SetupWithManager(ctx context.Context, mgr c
 		logger.Error(err, "Failed to get ServiceAccount informer")
 		return err
 	}
-	saInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{})
+
+	if _, err = saInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{}); err != nil {
+		logger.Error(err, "Failed to add event handler")
+		return err
+	}
 
 	// Inject logger, decoder, and client.
 	m.logger = mgr.GetLogger()
