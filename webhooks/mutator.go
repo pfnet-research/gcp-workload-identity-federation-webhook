@@ -32,7 +32,7 @@ type GCPWorkloadIdentityMutator struct {
 	SetupContainerResources *corev1.ResourceRequirements
 
 	logger  logr.Logger
-	decoder *admission.Decoder
+	decoder admission.Decoder
 	client.Client
 }
 
