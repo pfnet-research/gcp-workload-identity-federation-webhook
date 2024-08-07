@@ -6,7 +6,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 // Volumes
@@ -54,7 +54,7 @@ func k8sSATokenVolume(
 						Path:              K8sSATokenName,
 					},
 				}},
-				DefaultMode: pointer.Int32(defaultMode),
+				DefaultMode: ptr.To(defaultMode),
 			},
 		},
 	}
@@ -75,7 +75,7 @@ func (m *GCPWorkloadIdentityMutator) externalCredConfigVolume(defaultMode int32)
 						},
 					},
 				},
-				DefaultMode: pointer.Int32(defaultMode),
+				DefaultMode: ptr.To(defaultMode),
 			},
 		},
 	}
@@ -89,7 +89,7 @@ func gcloudSetupContainer(
 ) corev1.Container {
 	// for Restricted Profile in Pod Security Standards
 	securityContext := &corev1.SecurityContext{
-		AllowPrivilegeEscalation: pointer.Bool(false),
+		AllowPrivilegeEscalation: ptr.To(false),
 		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{
 				"ALL",
