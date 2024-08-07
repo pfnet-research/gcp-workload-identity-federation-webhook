@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
@@ -34,13 +34,13 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		}
 	})
 	When("passed Pod has unparsed token expiration annotation", func() {
-		It("should reaise error", func() {
+		It("should raise error", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
-				Audience:                 pointer.String("my-audience"),
-				TokenExpirationSeconds:   pointer.Int64(10000),
-				RunAsUser:                pointer.Int64(1000),
+				ServiceAccountEmail:      ptr.To(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
+				Audience:                 ptr.To("my-audience"),
+				TokenExpirationSeconds:   ptr.To[int64](10000),
+				RunAsUser:                ptr.To[int64](1000),
 			}
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -58,10 +58,10 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should replace reqiured fields and override configurations", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
-				Audience:                 pointer.String("my-audience"),
-				TokenExpirationSeconds:   pointer.Int64(10000),
-				RunAsUser:                pointer.Int64(1000),
+				ServiceAccountEmail:      ptr.To(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
+				Audience:                 ptr.To("my-audience"),
+				TokenExpirationSeconds:   ptr.To[int64](10000),
+				RunAsUser:                ptr.To[int64](1000),
 			}
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -178,7 +178,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should mutate required fields", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      pointer.StringPtr(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
+				ServiceAccountEmail:      ptr.To(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
 			}
 			pod := &corev1.Pod{
 				Spec: corev1.PodSpec{
