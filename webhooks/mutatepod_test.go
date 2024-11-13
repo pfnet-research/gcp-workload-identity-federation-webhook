@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,7 +20,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 	project := "demo"
 	BeforeEach(func() {
 		m = &GCPWorkloadIdentityMutator{
-			AnnotationDomain:       annotaitonDomain,
+			AnnotationDomain:       annotationDomain,
 			DefaultAudience:        AudienceDefault,
 			DefaultTokenExpiration: DefaultTokenExpirationDefault,
 			MinTokenExpration:      MinTokenExprationDefault,
@@ -37,7 +38,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should raise error", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      ptr.To(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
+				ServiceAccountEmail:      fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project),
 				Audience:                 ptr.To("my-audience"),
 				TokenExpirationSeconds:   ptr.To[int64](10000),
 				RunAsUser:                ptr.To[int64](1000),
@@ -58,7 +59,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 		It("should replace reqiured fields and override configurations", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      ptr.To(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
+				ServiceAccountEmail:      fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project),
 				Audience:                 ptr.To("my-audience"),
 				TokenExpirationSeconds:   ptr.To[int64](10000),
 				RunAsUser:                ptr.To[int64](1000),
@@ -126,18 +127,19 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 					Value: filepath.Join(GCloudConfigMountPath, ExternalCredConfigFilename),
 				},
-				cloudSDKComputeRegionEnvVar("not-to-be-replaced"),
-				{
-					Name:  "CLOUDSDK_CONFIG",
-					Value: GCloudConfigMountPath,
-				},
-				projectEnvVar(project),
 			}
+			expectedEnvVars = append(expectedEnvVars, cloudSDKComputeRegionEnvVar("not-to-be-replaced")...)
+			expectedEnvVars = append(expectedEnvVars, corev1.EnvVar{
+				Name:  "CLOUDSDK_CONFIG",
+				Value: GCloudConfigMountPath,
+			})
+			expectedEnvVars = append(expectedEnvVars, projectEnvVar(project)...)
+
 			expected := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						idProviderAnnotation:      workloadIdentityProviderFmt,
-						saEmailAnnotation:         *idConfig.ServiceAccountEmail,
+						saEmailAnnotation:         idConfig.ServiceAccountEmail,
 						audienceAnnotation:        "my-audience",
 						tokenExpirationAnnotation: "3601",
 					},
@@ -146,7 +148,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
 							*idConfig.WorkloadIdentityProvider,
-							*idConfig.ServiceAccountEmail,
+							idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
 							idConfig.RunAsUser,
@@ -171,14 +173,15 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			// Expect(pod.Spec.InitContainers[0]).To(BeEquivalentTo(expected.Spec.InitContainers[0]))
 			// Expect(pod.Spec.InitContainers[1]).To(BeEquivalentTo(expected.Spec.InitContainers[1]))
 			// Expect(pod.Spec.Containers).To(BeEquivalentTo(expected.Spec.Containers))
-			Expect(pod).To(BeEquivalentTo(expected))
+			// Expect(pod).To(BeEquivalentTo(expected))
+			Expect(cmp.Diff(pod, expected)).To(BeEmpty())
 		})
 	})
 	When("passed Pod doesn't have no conflicted and no override fields", func() {
 		It("should mutate required fields", func() {
 			idConfig := GCPWorkloadIdentityConfig{
 				WorkloadIdentityProvider: &workloadIdentityProviderFmt,
-				ServiceAccountEmail:      ptr.To(fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project)),
+				ServiceAccountEmail:      fmt.Sprintf("sa@%s.iam.gserviceaccount.com", project),
 			}
 			pod := &corev1.Pod{
 				Spec: corev1.PodSpec{
@@ -200,7 +203,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						idProviderAnnotation:      workloadIdentityProviderFmt,
-						saEmailAnnotation:         *idConfig.ServiceAccountEmail,
+						saEmailAnnotation:         idConfig.ServiceAccountEmail,
 						audienceAnnotation:        m.DefaultAudience,
 						tokenExpirationAnnotation: fmt.Sprint(int64(m.DefaultTokenExpiration.Seconds())),
 					},
@@ -209,7 +212,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
 							*idConfig.WorkloadIdentityProvider,
-							*idConfig.ServiceAccountEmail,
+							idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
 							idConfig.RunAsUser,
@@ -239,7 +242,8 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 			// Expect(pod.Spec.Volumes).To(BeEquivalentTo(expected.Spec.Volumes))
 			// Expect(pod.Spec.InitContainers).To(BeEquivalentTo(expected.Spec.InitContainers))
 			// Expect(pod.Spec.Containers).To(BeEquivalentTo(expected.Spec.Containers))
-			Expect(pod).To(BeEquivalentTo(expected))
+			// Expect(pod).To(BeEquivalentTo(expected))
+			Expect(cmp.Diff(pod, expected)).To(BeEmpty())
 		})
 	})
 })

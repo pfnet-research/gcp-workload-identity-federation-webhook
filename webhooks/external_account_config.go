@@ -31,7 +31,7 @@ type ExternalAccountCredentials struct {
 	TokenInfoURL string `json:"token_info_url,omitempty"`
 	// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
 	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
-	ServiceAccountImpersonationURL string `json:"service_account_impersonation_url"`
+	ServiceAccountImpersonationURL string `json:"service_account_impersonation_url,omitempty"`
 	// ServiceAccountImpersonationLifetimeSeconds is the number of seconds the service account impersonation
 	// token will be valid for.
 	ServiceAccountImpersonationLifetimeSeconds int `json:"service_account_impersonation_lifetime_seconds,omitempty"`
@@ -63,9 +63,10 @@ func NewExternalAccountCredentials(aud, gsaEmail string) *ExternalAccountCredent
 			File:   filepath.Join(K8sSATokenMountPath, K8sSATokenName),
 			Format: CredentialFormat{Type: "text"},
 		},
-		ServiceAccountImpersonationURL: fmt.Sprintf("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/%s:generateAccessToken", gsaEmail),
 	}
-
+	if gsaEmail != "" {
+		creds.ServiceAccountImpersonationURL = fmt.Sprintf("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/%s:generateAccessToken", gsaEmail)
+	}
 	return creds
 }
 

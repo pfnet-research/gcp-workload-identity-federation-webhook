@@ -26,14 +26,14 @@ import (
 )
 
 var (
-	annotaitonDomain          = AnnotationDomainDefault
-	idProviderAnnotation      = filepath.Join(annotaitonDomain, WorkloadIdentityProviderAnnotation)
-	saEmailAnnotation         = filepath.Join(annotaitonDomain, ServiceAccountEmailAnnotation)
-	audienceAnnotation        = filepath.Join(annotaitonDomain, AudienceAnnotation)
-	tokenExpirationAnnotation = filepath.Join(annotaitonDomain, TokenExpirationAnnotation)
-	runAsUserAnnotation       = filepath.Join(annotaitonDomain, RunAsUserAnnotation)
-	injectionModeAnnotation   = filepath.Join(annotaitonDomain, InjectionModeAnnotation)
-	externalConfigAnnotation  = filepath.Join(annotaitonDomain, ExternalCredentialsJsonAnnotation)
+	annotationDomain          = AnnotationDomainDefault
+	idProviderAnnotation      = filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation)
+	saEmailAnnotation         = filepath.Join(annotationDomain, ServiceAccountEmailAnnotation)
+	audienceAnnotation        = filepath.Join(annotationDomain, AudienceAnnotation)
+	tokenExpirationAnnotation = filepath.Join(annotationDomain, TokenExpirationAnnotation)
+	runAsUserAnnotation       = filepath.Join(annotationDomain, RunAsUserAnnotation)
+	injectionModeAnnotation   = filepath.Join(annotationDomain, InjectionModeAnnotation)
+	externalConfigAnnotation  = filepath.Join(annotationDomain, ExternalCredentialsJsonAnnotation)
 	setupContainerResources   = &corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
