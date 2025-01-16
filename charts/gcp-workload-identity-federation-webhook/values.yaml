@@ -11,6 +11,7 @@ controllerManager:
 
   kubeRbacProxy:
     image:
+      pullPolicy: IfNotPresent
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.11.0
     resources:
@@ -21,8 +22,11 @@ controllerManager:
         cpu: 5m
         memory: 64Mi
 
+  imagePullSecrets: []
+
   manager:
     image:
+      pullPolicy: IfNotPresent
       repository: ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook
       # default tag is v{{.Chart.AppVersion｝｝
       # tag: latest

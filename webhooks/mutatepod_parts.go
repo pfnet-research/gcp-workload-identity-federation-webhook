@@ -3,6 +3,7 @@ package webhooks
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	corev1 "k8s.io/api/core/v1"
@@ -100,6 +101,33 @@ func gcloudSetupContainer(
 	if runAsUser != nil {
 		securityContext.RunAsUser = runAsUser
 	}
+	env := []corev1.EnvVar{{
+		Name:  "GCP_WORKLOAD_IDENTITY_PROVIDER",
+		Value: workloadIdProvider,
+	}, {
+		Name:  "CLOUDSDK_CONFIG",
+		Value: GCloudConfigMountPath,
+	}}
+
+	if saEmail != "" {
+		env = append(env, corev1.EnvVar{
+			Name:  "GCP_SERVICE_ACCOUNT",
+			Value: saEmail,
+		})
+	}
+	env = append(env, projectEnvVar(project)...)
+
+	createCredsArgs := []string{
+		"$(GCP_WORKLOAD_IDENTITY_PROVIDER)",
+		fmt.Sprintf("--output-file=$(CLOUDSDK_CONFIG)/%s", ExternalCredConfigFilename),
+		fmt.Sprintf("--credential-source-file=%s", filepath.Join(K8sSATokenMountPath, K8sSATokenName)),
+	}
+	loginArgs := []string{
+		fmt.Sprintf("--cred-file=$(CLOUDSDK_CONFIG)/%s", ExternalCredConfigFilename),
+	}
+	if saEmail != "" {
+		createCredsArgs = append(createCredsArgs, "--service-account=$(GCP_SERVICE_ACCOUNT)")
+	}
 
 	c := corev1.Container{
 		Name:  GCloudSetupInitContainerName,
@@ -108,27 +136,16 @@ func gcloudSetupContainer(
 			"sh", "-c",
 			heredoc.Docf(`
 				gcloud iam workload-identity-pools create-cred-config \
-				  $(GCP_WORKLOAD_IDENTITY_PROVIDER) \
-				  --service-account=$(GCP_SERVICE_ACCOUNT) \
-				  --output-file=$(CLOUDSDK_CONFIG)/%s \
-				  --credential-source-file=%s
-				gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/%s
-			`, ExternalCredConfigFilename,
-				filepath.Join(K8sSATokenMountPath, K8sSATokenName),
-				ExternalCredConfigFilename,
+				  %s
+				gcloud auth login \
+				  %s
+			`,
+				strings.Join(createCredsArgs, " \\\n  "),
+				strings.Join(loginArgs, " \\\n  "),
 			),
 		},
-		VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
-		Env: []corev1.EnvVar{{
-			Name:  "GCP_WORKLOAD_IDENTITY_PROVIDER",
-			Value: workloadIdProvider,
-		}, {
-			Name:  "GCP_SERVICE_ACCOUNT",
-			Value: saEmail,
-		}, {
-			Name:  "CLOUDSDK_CONFIG",
-			Value: GCloudConfigMountPath,
-		}, projectEnvVar(project)},
+		VolumeMounts:    volumeMountsToAddOrReplace(GCloudMode),
+		Env:             env,
 		SecurityContext: securityContext,
 	}
 	if resources != nil {
@@ -191,19 +208,25 @@ func envVarsToAddOrReplace(mode InjectionMode) []corev1.EnvVar {
 }
 
 func envVarsToAddIfNotPresent(region, project string) []corev1.EnvVar {
-	return []corev1.EnvVar{cloudSDKComputeRegionEnvVar(region), projectEnvVar(project)}
+	return append(cloudSDKComputeRegionEnvVar(region), projectEnvVar(project)...)
 }
 
-func cloudSDKComputeRegionEnvVar(region string) corev1.EnvVar {
-	return corev1.EnvVar{
-		Name:  "CLOUDSDK_COMPUTE_REGION",
-		Value: region,
+func cloudSDKComputeRegionEnvVar(region string) (ret []corev1.EnvVar) {
+	if region != "" {
+		ret = append(ret, corev1.EnvVar{
+			Name:  "CLOUDSDK_COMPUTE_REGION",
+			Value: region,
+		})
 	}
+	return
 }
 
-func projectEnvVar(project string) corev1.EnvVar {
-	return corev1.EnvVar{
-		Name:  "CLOUDSDK_CORE_PROJECT",
-		Value: project,
+func projectEnvVar(project string) (ret []corev1.EnvVar) {
+	if project != "" {
+		ret = append(ret, corev1.EnvVar{
+			Name:  "CLOUDSDK_CORE_PROJECT",
+			Value: project,
+		})
 	}
+	return
 }

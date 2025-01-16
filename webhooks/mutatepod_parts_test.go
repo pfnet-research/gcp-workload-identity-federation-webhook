@@ -24,10 +24,11 @@ func TestGcloudSetupContainer(t *testing.T) {
 			"sh", "-c",
 			`gcloud iam workload-identity-pools create-cred-config \
   $(GCP_WORKLOAD_IDENTITY_PROVIDER) \
-  --service-account=$(GCP_SERVICE_ACCOUNT) \
   --output-file=$(CLOUDSDK_CONFIG)/federation.json \
-  --credential-source-file=/var/run/secrets/sts.googleapis.com/serviceaccount/token
-gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
+  --credential-source-file=/var/run/secrets/sts.googleapis.com/serviceaccount/token \
+  --service-account=$(GCP_SERVICE_ACCOUNT)
+gcloud auth login \
+  --cred-file=$(CLOUDSDK_CONFIG)/federation.json
 `,
 		},
 		VolumeMounts: []corev1.VolumeMount{
@@ -47,12 +48,12 @@ gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
 				Value: workloadIdProvider,
 			},
 			{
-				Name:  "GCP_SERVICE_ACCOUNT",
-				Value: saEmail,
-			},
-			{
 				Name:  "CLOUDSDK_CONFIG",
 				Value: "/var/run/secrets/gcloud/config",
+			},
+			{
+				Name:  "GCP_SERVICE_ACCOUNT",
+				Value: saEmail,
 			},
 			{
 				Name:  "CLOUDSDK_CORE_PROJECT",
