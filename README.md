@@ -74,7 +74,7 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
       initContainers:
         ### gcloud-setup init container is injected by the webhook ###
       - name: gcloud-setup
-        image: google/cloud-sdk:slim
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
         command:
         - sh
         - -c
@@ -236,7 +236,7 @@ Usage of /gcp-workload-identity-federation-webhook:
   -annotation-prefix string
         The Service Account annotation to look for (default "cloud.google.com")
   -gcloud-image string
-        Container image for the init container setting up GCloud SDK (default "google/cloud-sdk:slim")
+        Container image for the init container setting up GCloud SDK (default "gcr.io/google.com/cloudsdktool/google-cloud-cli:stable")
   -gcp-default-region string
         If set, CLOUDSDK_COMPUTE_REGION will be set to this value in mutated containers
   -health-probe-bind-address string

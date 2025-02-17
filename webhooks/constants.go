@@ -9,7 +9,7 @@ const (
 	DefaultTokenExpirationDefault = time.Duration(24) * time.Hour
 	MinTokenExprationDefault      = time.Duration(1) * time.Hour
 	DefaultGCloudRegionDefault    = "asia-northeast1"
-	GcloudImageDefault            = "google/cloud-sdk:slim"
+	GcloudImageDefault            = "gcr.io/google.com/cloudsdktool/google-cloud-cli:stable"
 	VolumeModeDefault             = 0440
 	SetupContainerResources       = ""
 

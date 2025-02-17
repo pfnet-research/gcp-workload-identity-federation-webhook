@@ -36,7 +36,7 @@ controllerManager:
     # # If set, CLOUDSDK_COMPUTE_REGION will be set to this value in mutated containers
     # - --gcp-default-region=
     # # Container image for the init container setting up GCloud SDK
-    # - --gcloud-image=google/cloud-sdk:slim
+    # - --gcloud-image=gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
     # # Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'
     # - --setup-container-resources=
     # # DefaultMode for the token volume (default 0440 (octal int literal))
