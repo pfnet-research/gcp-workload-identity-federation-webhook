@@ -14,7 +14,7 @@ func TestGcloudSetupContainer(t *testing.T) {
 		workloadIdProvider = "projects/12345/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster"
 		saEmail            = "app-x@project.iam.googleapis.com"
 		project            = "project"
-		gcloudImage        = "google/cloud-sdk:slim"
+		gcloudImage        = "gcr.io/google.com/cloudsdktool/google-cloud-cli:stable"
 	)
 
 	expectedTemplate := corev1.Container{
