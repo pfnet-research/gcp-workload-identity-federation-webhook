@@ -52,6 +52,10 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
         #           The value must be one of 'gcloud'(default) or 'direct'.
         #           Refer to the next section for 'direct' injection mode
         cloud.google.com/injection-mode: "gcloud"
+
+        # optional: Defaults to value inside `service-account-email`
+        #           
+        cloud.google.com/project: "12345"
     ```
 
 4. All new pods launched using the Kubernetes `ServiceAccount` will be mutated so that they can impersonate the GCP service account. Below is an example pod spec with the environment variables and volume fields mutated by the webhook.
@@ -62,13 +66,13 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
     metadata:
       name: app-x-pod
       namespace: service-a
-    annotations:
-      # optional: A comma-separated list of initContainers and container names
-      #   to skip adding volumeMounts and environment variables
-      cloud.google.com/skip-containers: "init-first,sidecar"
-      # optional: Defaults to 86400, or value specified in ServiceAccount
-      #   annotation as shown in previous step, for expirationSeconds if not set
-      cloud.google.com/token-expiration: "86400"
+      annotations:
+        # optional: A comma-separated list of initContainers and container names
+        #   to skip adding volumeMounts and environment variables
+        cloud.google.com/skip-containers: "init-first,sidecar"
+        # optional: Defaults to 86400, or value specified in ServiceAccount
+        #   annotation as shown in previous step, for expirationSeconds if not set
+        cloud.google.com/token-expiration: "86400"
     spec:
       serviceAccountName: app-x
       initContainers:
@@ -167,27 +171,27 @@ To use direct injection mode:
     metadata:
       name: app-x-pod
       namespace: service-a
-    annotations:
-      # optional: A comma-separated list of initContainers and container names
-      #   to skip adding volumeMounts and environment variables
-      cloud.google.com/skip-containers: "init-first,sidecar"
-      #
-      # The Generated External Credentials Json is added as an annotation, and mounted into the container filesystem via the DownwardAPI Volume
-      #
-      cloud.google.com/external-credentials-json: |-
-        {
-          "type": "external_account",
-          "audience": "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster",
-          "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
-          "token_url": "https://sts.googleapis.com/v1/token",
-          "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/app-x@project.iam.gserviceaccount.com:generateAccessToken",
-          "credential_source": {
-            "file": "/var/run/secrets/sts.googleapis.com/serviceaccount/token",
-            "format": {
-              "type": "text"
+      annotations:
+        # optional: A comma-separated list of initContainers and container names
+        #   to skip adding volumeMounts and environment variables
+        cloud.google.com/skip-containers: "init-first,sidecar"
+        #
+        # The Generated External Credentials Json is added as an annotation, and mounted into the container filesystem via the DownwardAPI Volume
+        #
+        cloud.google.com/external-credentials-json: |-
+          {
+            "type": "external_account",
+            "audience": "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+            "token_url": "https://sts.googleapis.com/v1/token",
+            "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/app-x@project.iam.gserviceaccount.com:generateAccessToken",
+            "credential_source": {
+              "file": "/var/run/secrets/sts.googleapis.com/serviceaccount/token",
+              "format": {
+                "type": "text"
+              }
             }
           }
-        }
     spec:
       serviceAccountName: app-x
       initContainers:

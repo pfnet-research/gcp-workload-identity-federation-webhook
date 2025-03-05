@@ -42,12 +42,12 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 		pod.Annotations = map[string]string{}
 	}
 	pod.Annotations[filepath.Join(m.AnnotationDomain, WorkloadIdentityProviderAnnotation)] = *idConfig.WorkloadIdentityProvider
-	pod.Annotations[filepath.Join(m.AnnotationDomain, ServiceAccountEmailAnnotation)] = *idConfig.ServiceAccountEmail
+	pod.Annotations[filepath.Join(m.AnnotationDomain, ServiceAccountEmailAnnotation)] = idConfig.ServiceAccountEmail
 	pod.Annotations[filepath.Join(m.AnnotationDomain, AudienceAnnotation)] = audience
 	pod.Annotations[filepath.Join(m.AnnotationDomain, TokenExpirationAnnotation)] = fmt.Sprint(expirationSeconds)
 	if idConfig.InjectionMode == DirectMode {
 		// Add annotation
-		credBody, err := buildExternalCredentialsJson(*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail)
+		credBody, err := buildExternalCredentialsJson(*idConfig.WorkloadIdentityProvider, idConfig.ServiceAccountEmail)
 		if err != nil {
 			return err
 		}
@@ -57,10 +57,11 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	//
 	// calculate project from service account
 	//
-	matches := projectRegex.FindStringSubmatch(*idConfig.ServiceAccountEmail)
 	project := ""
-	if len(matches) >= 2 {
-		project = matches[1] // the group 0 is thw whole match
+	if idConfig.Project != nil {
+		project = *idConfig.Project
+	} else if matches := projectRegex.FindStringSubmatch(idConfig.ServiceAccountEmail); len(matches) >= 2 {
+		project = matches[1] // the group 0 is the whole match
 	}
 
 	//
@@ -75,7 +76,7 @@ func (m *GCPWorkloadIdentityMutator) mutatePod(pod *corev1.Pod, idConfig GCPWork
 	//
 	if idConfig.InjectionMode == GCloudMode || idConfig.InjectionMode == UndefinedMode {
 		pod.Spec.InitContainers = prependOrReplaceContainer(pod.Spec.InitContainers, gcloudSetupContainer(
-			*idConfig.WorkloadIdentityProvider, *idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
+			*idConfig.WorkloadIdentityProvider, idConfig.ServiceAccountEmail, project, m.GcloudImage, idConfig.RunAsUser, m.SetupContainerResources,
 		))
 	}
 
