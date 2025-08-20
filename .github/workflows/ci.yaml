@@ -31,9 +31,7 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version-file: "go.mod"
-    - uses: golangci/golangci-lint-action@v6
-      with:
-        version: v1.63
+    - run: make lint
 
   lint-chart:
     runs-on: ubuntu-latest

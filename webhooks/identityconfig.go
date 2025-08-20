@@ -74,7 +74,7 @@ func NewGCPWorkloadIdentityConfig(
 		case GCloudMode:
 			cfg.InjectionMode = GCloudMode
 		default:
-			return nil, fmt.Errorf("%s mode must be '%s', '%s' or unset.", filepath.Join(annotationDomain, InjectionModeAnnotation), DirectMode, GCloudMode)
+			return nil, fmt.Errorf("%s mode must be '%s', '%s' or unset", filepath.Join(annotationDomain, InjectionModeAnnotation), DirectMode, GCloudMode)
 		}
 	} else {
 		cfg.InjectionMode = UndefinedMode
