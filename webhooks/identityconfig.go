@@ -16,8 +16,9 @@ var (
 )
 
 type GCPWorkloadIdentityConfig struct {
+	Project                  *string
 	WorkloadIdentityProvider *string
-	ServiceAccountEmail      *string
+	ServiceAccountEmail      string
 	RunAsUser                *int64
 	InjectionMode            InjectionMode
 
@@ -44,11 +45,14 @@ func NewGCPWorkloadIdentityConfig(
 	}
 
 	if v, ok := sa.Annotations[filepath.Join(annotationDomain, ServiceAccountEmailAnnotation)]; ok {
-		cfg.ServiceAccountEmail = &v
+		cfg.ServiceAccountEmail = v
 	}
 
 	if v, ok := sa.Annotations[filepath.Join(annotationDomain, AudienceAnnotation)]; ok {
 		cfg.Audience = &v
+	}
+	if v, ok := sa.Annotations[filepath.Join(annotationDomain, ProjectAnnotation)]; ok {
+		cfg.Project = &v
 	}
 
 	if v, ok := sa.Annotations[filepath.Join(annotationDomain, TokenExpirationAnnotation)]; ok {
@@ -80,12 +84,8 @@ func NewGCPWorkloadIdentityConfig(
 		cfg.InjectionMode = UndefinedMode
 	}
 
-	if cfg.WorkloadIdentityProvider == nil && cfg.ServiceAccountEmail == nil {
+	if cfg.WorkloadIdentityProvider == nil {
 		return nil, nil
-	}
-
-	if cfg.WorkloadIdentityProvider == nil || cfg.ServiceAccountEmail == nil {
-		return nil, fmt.Errorf("%s, %s must set at a time", filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation), filepath.Join(annotationDomain, TokenExpirationAnnotation))
 	}
 
 	if !workloadIdentityProviderRegex.Match([]byte(*cfg.WorkloadIdentityProvider)) {
