@@ -8,7 +8,7 @@ jobs:
   tagpr:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - id: tagpr
       name: Tagpr
       uses: Songmu/tagpr@v1
