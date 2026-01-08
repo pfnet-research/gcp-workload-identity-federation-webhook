@@ -5,7 +5,7 @@ IMG ?= ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook:$(TAG)
 IMG_LATEST ?= ghcr.io/pfnet-research/gcp-workload-identity-federation-webhook:latest
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.33
+ENVTEST_K8S_VERSION = 1.35
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -142,9 +142,9 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.7.1
-CONTROLLER_TOOLS_VERSION ?= v0.18.0
-GOLANGCI_LINT_VERSION ?= v2.4.0
+KUSTOMIZE_VERSION ?= v5.8.0
+CONTROLLER_TOOLS_VERSION ?= v0.20.0
+GOLANGCI_LINT_VERSION ?= v2.8.0
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
