@@ -17,9 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"os"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -31,10 +33,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	cliflag "k8s.io/component-base/cli/flag"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -61,6 +65,11 @@ func main() {
 	gCloudImage := flag.String("gcloud-image", webhooks.GcloudImageDefault, "Container image for the init container setting up GCloud SDK")
 	tokenDefaultMode := flag.Int("token-default-mode", webhooks.VolumeModeDefault, "DefaultMode for the token volume. CAUTION: if you allow reading from others (e.g. '0444'), the token can read from anyone who can log in to the node.")
 	setupContainerResources := flag.String("setup-container-resources", webhooks.SetupContainerResources, `Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'`)
+	tlsCipherSuiteValues := cliflag.PreferredTLSCipherNames()
+	tlsCipherSuiteInsecureValues := cliflag.InsecureTLSCipherNames()
+	tlsCipherSuites := flag.String("tls-cipher-suites", "", "Comma-separated list of TLS cipher suites to be used by the webhook server. \nValues: "+strings.Join(tlsCipherSuiteValues, ", ")+"\nInsecure Values: "+strings.Join(tlsCipherSuiteInsecureValues, ", "))
+	tlsMinVersionValues := cliflag.TLSPossibleVersions()
+	tlsMinVersion := flag.String("tls-min-version", "", "The minimum TLS version to be used by the webhook server. ("+strings.Join(tlsMinVersionValues, ", ")+")")
 
 	opts := zap.Options{
 		Development: true,
@@ -79,12 +88,43 @@ func main() {
 		}
 	}
 
+	var tlsOpts []func(*tls.Config)
+
+	if *tlsCipherSuites != "" {
+		cipherSuites, err := cliflag.TLSCipherSuites(strings.Split(*tlsCipherSuites, ","))
+		if err != nil {
+			setupLog.Error(err, "unable to parse the value of --tls-cipher-suites")
+			os.Exit(1)
+		}
+		if cipherSuites != nil {
+			tlsOpts = append(tlsOpts, func(c *tls.Config) {
+				c.CipherSuites = cipherSuites
+			})
+		}
+	}
+
+	if *tlsMinVersion != "" {
+		version, err := cliflag.TLSVersion(*tlsMinVersion)
+		if err != nil {
+			setupLog.Error(err, "unable to parse the value of --tls-min-version")
+			os.Exit(1)
+		}
+		tlsOpts = append(tlsOpts, func(c *tls.Config) {
+			c.MinVersion = version
+		})
+	}
+
+	webhookOptions := webhook.Options{
+		TLSOpts: tlsOpts,
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
 			BindAddress: *metricsAddr,
 		},
 		HealthProbeBindAddress: *probeAddr,
+		WebhookServer:          webhook.NewServer(webhookOptions),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
