@@ -13,6 +13,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     control-plane: controller-manager
+    webhook-type: gcp-workload-identity-federation-webhook
   {{- include "gcp-workload-identity-federation-webhook.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controllerManager.replicas }}
