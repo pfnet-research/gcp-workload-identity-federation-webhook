@@ -69,8 +69,9 @@ gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
 		},
 	}
 
+	saEmailPtr := saEmail
 	t.Run("Without runAsUser and resources", func(t *testing.T) {
-		actual := gcloudSetupContainer(workloadIdProvider, saEmail, project, gcloudImage, nil, nil)
+		actual := gcloudSetupContainer(workloadIdProvider, &saEmailPtr, project, gcloudImage, nil, nil)
 		expected := *expectedTemplate.DeepCopy()
 		if diff := cmp.Diff(actual, expected); diff != "" {
 			t.Errorf("gcloudSetupContainer() mismatch (-want +got):\n%s", diff)
@@ -79,7 +80,7 @@ gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
 
 	t.Run("With runAsUser", func(t *testing.T) {
 		user := int64(1000)
-		actual := gcloudSetupContainer(workloadIdProvider, saEmail, project, gcloudImage, ptr.To(user), nil)
+		actual := gcloudSetupContainer(workloadIdProvider, &saEmailPtr, project, gcloudImage, ptr.To(user), nil)
 
 		expected := *expectedTemplate.DeepCopy()
 		expected.SecurityContext.RunAsUser = ptr.To(user)
@@ -95,7 +96,7 @@ gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
 				corev1.ResourceCPU: resource.MustParse("100m"),
 			},
 		}
-		actual := gcloudSetupContainer(workloadIdProvider, saEmail, project, gcloudImage, nil, &resources)
+		actual := gcloudSetupContainer(workloadIdProvider, &saEmailPtr, project, gcloudImage, nil, &resources)
 
 		expected := *expectedTemplate.DeepCopy()
 		expected.Resources = resources

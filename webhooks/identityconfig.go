@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -20,6 +21,8 @@ type GCPWorkloadIdentityConfig struct {
 	ServiceAccountEmail      *string
 	RunAsUser                *int64
 	InjectionMode            InjectionMode
+	TokenExchangeMode        TokenExchangeMode
+	ProjectID                *string
 
 	Audience               *string
 	TokenExpirationSeconds *int64
@@ -31,6 +34,13 @@ const (
 	UndefinedMode InjectionMode = ""
 	GCloudMode    InjectionMode = "gcloud"
 	DirectMode    InjectionMode = "direct"
+)
+
+type TokenExchangeMode string
+
+const (
+	ServiceAccountMode TokenExchangeMode = "service-account"
+	DirectAccessMode   TokenExchangeMode = "direct-access"
 )
 
 func NewGCPWorkloadIdentityConfig(
@@ -49,6 +59,10 @@ func NewGCPWorkloadIdentityConfig(
 
 	if v, ok := sa.Annotations[filepath.Join(annotationDomain, AudienceAnnotation)]; ok {
 		cfg.Audience = &v
+	}
+
+	if v, ok := sa.Annotations[filepath.Join(annotationDomain, ProjectIDAnnotation)]; ok {
+		cfg.ProjectID = &v
 	}
 
 	if v, ok := sa.Annotations[filepath.Join(annotationDomain, TokenExpirationAnnotation)]; ok {
@@ -80,14 +94,45 @@ func NewGCPWorkloadIdentityConfig(
 		cfg.InjectionMode = UndefinedMode
 	}
 
-	if cfg.WorkloadIdentityProvider == nil && cfg.ServiceAccountEmail == nil {
-		return nil, nil
+	if v, ok := sa.Annotations[filepath.Join(annotationDomain, TokenExchangeModeAnnotation)]; ok {
+		switch TokenExchangeMode(strings.ToLower(v)) {
+		case ServiceAccountMode:
+			cfg.TokenExchangeMode = ServiceAccountMode
+		case DirectAccessMode:
+			cfg.TokenExchangeMode = DirectAccessMode
+		default:
+			return nil, fmt.Errorf("%s mode must be '%s', '%s' or unset", filepath.Join(annotationDomain, TokenExchangeModeAnnotation), ServiceAccountMode, DirectAccessMode)
+		}
+	} else {
+		cfg.TokenExchangeMode = ServiceAccountMode
 	}
 
-	if cfg.WorkloadIdentityProvider == nil || cfg.ServiceAccountEmail == nil {
-		return nil, fmt.Errorf("%s, %s must set at a time", filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation), filepath.Join(annotationDomain, TokenExpirationAnnotation))
+	switch cfg.TokenExchangeMode {
+	case DirectAccessMode:
+		if cfg.WorkloadIdentityProvider == nil {
+			return nil, fmt.Errorf("%s is required when %s is '%s'",
+				filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation),
+				filepath.Join(annotationDomain, TokenExchangeModeAnnotation),
+				DirectAccessMode,
+			)
+		}
+		if cfg.ServiceAccountEmail != nil {
+			ctrllog.Log.WithName("identityconfig").Info(
+				"ignoring service-account-email annotation in direct-access token-exchange-mode",
+				"serviceaccount", sa.Namespace+"/"+sa.Name,
+			)
+			cfg.ServiceAccountEmail = nil
+		}
+	default: // ServiceAccountMode
+		if cfg.WorkloadIdentityProvider == nil && cfg.ServiceAccountEmail == nil {
+			return nil, nil
+		}
+		if cfg.WorkloadIdentityProvider == nil || cfg.ServiceAccountEmail == nil {
+			return nil, fmt.Errorf("%s, %s must set at a time", filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation), filepath.Join(annotationDomain, ServiceAccountEmailAnnotation))
+		}
 	}
 
+	// Invariant: WorkloadIdentityProvider is non-nil here — both token-exchange-mode branches above ensure it.
 	if !workloadIdentityProviderRegex.Match([]byte(*cfg.WorkloadIdentityProvider)) {
 		return nil, fmt.Errorf("%s must be form of %s", filepath.Join(annotationDomain, WorkloadIdentityProviderAnnotation), workloadIdentityProviderFmt)
 	}

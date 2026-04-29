@@ -46,6 +46,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 					ServiceAccountEmail:      &saEmail,
 					Audience:                 nil,
 					TokenExpirationSeconds:   nil,
+					TokenExchangeMode:        ServiceAccountMode,
 				}))
 			})
 		})
@@ -68,6 +69,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 					ServiceAccountEmail:      &saEmail,
 					Audience:                 &audience,
 					TokenExpirationSeconds:   &tokenExpiration,
+					TokenExchangeMode:        ServiceAccountMode,
 				}))
 			})
 		})
@@ -92,6 +94,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 					Audience:                 &audience,
 					TokenExpirationSeconds:   &tokenExpiration,
 					InjectionMode:            DirectMode,
+					TokenExchangeMode:        ServiceAccountMode,
 				}))
 			})
 		})
@@ -116,6 +119,124 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 					Audience:                 &audience,
 					TokenExpirationSeconds:   &tokenExpiration,
 					InjectionMode:            GCloudMode,
+					TokenExchangeMode:        ServiceAccountMode,
+				}))
+			})
+		})
+		When("ServiceAccount with 'direct-access' token-exchange-mode only (no service-account-email)", func() {
+			It("can create GCPWorkloadIdentityConfig", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:        workloadProvider,
+							tokenExchangeModeAnnotation: string(DirectAccessMode),
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      nil,
+					TokenExchangeMode:        DirectAccessMode,
+				}))
+			})
+		})
+		When("ServiceAccount with 'direct-access' mode ignores service-account-email", func() {
+			It("returns config with ServiceAccountEmail cleared", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:        workloadProvider,
+							saEmailAnnotation:           saEmail,
+							tokenExchangeModeAnnotation: string(DirectAccessMode),
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      nil,
+					TokenExchangeMode:        DirectAccessMode,
+				}))
+			})
+		})
+		When("ServiceAccount with explicit 'service-account' token-exchange-mode", func() {
+			It("behaves identically to default", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:        workloadProvider,
+							saEmailAnnotation:           saEmail,
+							tokenExchangeModeAnnotation: string(ServiceAccountMode),
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      &saEmail,
+					TokenExchangeMode:        ServiceAccountMode,
+				}))
+			})
+		})
+		When("ServiceAccount with mixed-case 'DIRECT-ACCESS' token-exchange-mode", func() {
+			It("parses case-insensitively", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:        workloadProvider,
+							tokenExchangeModeAnnotation: "DIRECT-ACCESS",
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig.TokenExchangeMode).To(Equal(DirectAccessMode))
+			})
+		})
+		When("ServiceAccount with project-id annotation in direct-access mode", func() {
+			It("captures the explicit ProjectID", func() {
+				projectID := `my-project`
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:        workloadProvider,
+							tokenExchangeModeAnnotation: string(DirectAccessMode),
+							projectIDAnnotation:         projectID,
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					TokenExchangeMode:        DirectAccessMode,
+					ProjectID:                &projectID,
+				}))
+			})
+		})
+		When("ServiceAccount with project-id annotation in service-account mode", func() {
+			It("captures the explicit ProjectID alongside the SA email", func() {
+				projectID := `override-project`
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation: workloadProvider,
+							saEmailAnnotation:    saEmail,
+							projectIDAnnotation:  projectID,
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      &saEmail,
+					TokenExchangeMode:        ServiceAccountMode,
+					ProjectID:                &projectID,
 				}))
 			})
 		})
@@ -196,6 +317,36 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("mode must be")))
+			})
+		})
+		When("ServiceAccount with unparsable token-exchange-mode annotation", func() {
+			It("should raise error", func() {
+				sa = corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:        workloadProvider,
+							saEmailAnnotation:           saEmail,
+							tokenExchangeModeAnnotation: "not-valid",
+						},
+					},
+				}
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(idConfig).To(BeNil())
+				Expect(err).To(MatchError(ContainSubstring("mode must be")))
+			})
+		})
+		When("ServiceAccount with 'direct-access' mode but no workload-identity-provider", func() {
+			It("should raise error", func() {
+				sa = corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							tokenExchangeModeAnnotation: string(DirectAccessMode),
+						},
+					},
+				}
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				Expect(idConfig).To(BeNil())
+				Expect(err).To(MatchError(ContainSubstring("workload-identity-provider")))
 			})
 		})
 	})
