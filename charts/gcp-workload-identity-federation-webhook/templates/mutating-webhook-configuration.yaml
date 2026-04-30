@@ -18,12 +18,8 @@ webhooks:
   name: mpod.kb.io
   objectSelector:
     matchExpressions:
-        - key: cloud.google.com/skip-pod-identity-webhook
+        - key: {{ .Values.webhookConfiguration.annotationPrefix }}/skip-pod-identity-webhook
           operator: DoesNotExist
-        - key: webhook-type
-          operator: NotIn
-          values:
-            - gcp-workload-identity-federation-webhook
   rules:
   - apiGroups:
     - ""

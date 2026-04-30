@@ -69,3 +69,6 @@ webhookService:
     protocol: TCP
     targetPort: webhook
   type: ClusterIP
+
+webhookConfiguration:
+  annotationPrefix: cloud.google.com

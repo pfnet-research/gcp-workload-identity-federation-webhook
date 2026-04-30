@@ -13,7 +13,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     control-plane: controller-manager
-    webhook-type: gcp-workload-identity-federation-webhook
   {{- include "gcp-workload-identity-federation-webhook.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controllerManager.replicas }}
@@ -25,6 +24,7 @@ spec:
     metadata:
       labels:
         control-plane: controller-manager
+        {{ .Values.webhookConfiguration.annotationPrefix }}/skip-pod-identity-webhook: "true"
       {{- include "gcp-workload-identity-federation-webhook.selectorLabels" . | nindent 8 }}
       annotations:
         kubectl.kubernetes.io/default-container: manager
