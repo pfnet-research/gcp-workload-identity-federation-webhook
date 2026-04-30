@@ -40,6 +40,8 @@ spec:
       affinity:
         {{- toYaml .Values.controllerManager.affinity | nindent 8 }}
       {{- end }}
+      imagePullSecrets:
+        {{- toYaml .Values.controllerManager.imagePullSecrets | nindent 8 }}
       containers:
       - args:
         - --health-probe-bind-address=:8081
@@ -54,6 +56,7 @@ spec:
           value: {{ .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
           |  default (printf "v%v" .Chart.AppVersion) }}
+        imagePullPolicy: {{ .Values.controllerManager.manager.image.pullPolicy }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -89,6 +92,7 @@ spec:
           value: {{ .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.kubeRbacProxy.image.repository }}:{{ .Values.controllerManager.kubeRbacProxy.image.tag
           | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.controllerManager.kubeRbacProxy.image.pullPolicy }}
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443
