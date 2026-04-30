@@ -16,6 +16,10 @@ webhooks:
       path: /mutate-v1-pod
   failurePolicy: Ignore
   name: mpod.kb.io
+  objectSelector:
+    matchExpressions:
+        - key: {{ .Values.webhookConfiguration.annotationPrefix }}/skip-pod-identity-webhook
+          operator: DoesNotExist
   rules:
   - apiGroups:
     - ""
