@@ -2,6 +2,18 @@ apiVersion: v1
 entries:
   gcp-workload-identity-federation-webhook:
   - apiVersion: v2
+    appVersion: 0.6.0
+    created: "2026-05-13T08:11:28.032070687Z"
+    description: A Helm chart for gcp-workload-identity-federation-webhook
+    digest: 3a7864bb8800afb9ea611bf6db4fc84fcddece071ec8f907dc20c30d002b71d1
+    home: https://github.com/pfnet-research/gcp-workload-identity-federation-webhook/
+    kubeVersion: ^1.21.0-0
+    name: gcp-workload-identity-federation-webhook
+    type: application
+    urls:
+    - https://pfnet-research.github.io/gcp-workload-identity-federation-webhook/gcp-workload-identity-federation-webhook-0.6.0.tgz
+    version: 0.6.0
+  - apiVersion: v2
     appVersion: 0.5.2
     created: "2026-01-09T01:53:50.499088827Z"
     description: A Helm chart for gcp-workload-identity-federation-webhook
@@ -181,4 +193,4 @@ entries:
     urls:
     - https://pfnet-research.github.io/gcp-workload-identity-federation-webhook/gcp-workload-identity-federation-webhook-0.1.1.tgz
     version: 0.1.1
-generated: "2026-01-09T01:53:50.497673684Z"
+generated: "2026-05-13T08:11:28.031312658Z"
