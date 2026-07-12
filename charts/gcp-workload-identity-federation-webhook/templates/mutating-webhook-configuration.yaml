@@ -14,7 +14,8 @@ webhooks:
       name: '{{ include "gcp-workload-identity-federation-webhook.fullname" . }}-webhook-service'
       namespace: '{{ .Release.Namespace }}'
       path: /mutate-v1-pod
-  failurePolicy: Ignore
+  failurePolicy: {{ .Values.webhook.failurePolicy | default "Ignore" }}
+  reinvocationPolicy: {{ .Values.webhook.reinvocationPolicy | default "Never" }}
   name: mpod.kb.io
   rules:
   - apiGroups:
