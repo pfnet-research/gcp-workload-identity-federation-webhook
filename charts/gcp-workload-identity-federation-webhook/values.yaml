@@ -62,6 +62,10 @@ metricsService:
     targetPort: metrics
   type: ClusterIP
 
+webhook:
+  failurePolicy: Ignore
+  reinvocationPolicy: Never
+
 webhookService:
   ports:
   - name: webhook
