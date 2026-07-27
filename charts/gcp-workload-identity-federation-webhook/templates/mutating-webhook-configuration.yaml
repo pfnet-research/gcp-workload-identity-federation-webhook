@@ -17,6 +17,10 @@ webhooks:
   failurePolicy: {{ .Values.webhook.failurePolicy }}
   reinvocationPolicy: {{ .Values.webhook.reinvocationPolicy }}
   name: mpod.kb.io
+  objectSelector:
+    matchExpressions:
+        - key: {{ .Values.webhookConfiguration.annotationPrefix }}/skip-pod-identity-webhook
+          operator: DoesNotExist
   rules:
   - apiGroups:
     - ""
