@@ -52,6 +52,16 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
         #           The value must be one of 'gcloud'(default) or 'direct'.
         #           Refer to the next section for 'direct' injection mode
         cloud.google.com/injection-mode: "gcloud"
+
+        # optional: Token exchange mode. Value must be one of 'service-account' (default) or 'direct-access'.
+        #           Refer to the "Direct Resource Access" section for 'direct-access' mode.
+        cloud.google.com/token-exchange-mode: "service-account"
+
+        # optional: GCP project ID injected as CLOUDSDK_CORE_PROJECT in mutated pods.
+        #           When unset, the webhook extracts the project ID from
+        #           cloud.google.com/service-account-email. Set this explicitly to override,
+        #           or when no SA email is available (e.g. in 'direct-access' mode).
+        cloud.google.com/project-id: "project"
     ```
 
 4. All new pods launched using the Kubernetes `ServiceAccount` will be mutated so that they can impersonate the GCP service account. Below is an example pod spec with the environment variables and volume fields mutated by the webhook.
@@ -138,7 +148,79 @@ Note: GKE or Anthos natively support injecting workload identity for pods.  This
 
 When running a container with a non-root user, you need to give user id for GCloud SDK container using the annotation `cloud.google.com/gcloud-run-as-user` in the service account.
 
-## Experimental Direct Credential Injection Mode
+## Token Exchange Modes
+
+Select via the ServiceAccount annotation `cloud.google.com/token-exchange-mode`.
+
+### Service Account Impersonation (default)
+
+The value `service-account` (or an absent annotation) preserves existing behavior: the exchanged STS token impersonates the GCP service account in `cloud.google.com/service-account-email`. See the "Walk Through" section above for setup.
+
+### Direct Resource Access
+
+In `direct-access` mode the webhook configures the workload to access GCP resources directly as the federated principal, with no intermediate service account. This removes the service-account management step but requires IAM bindings that reference the federated principal directly.
+
+1. Annotate the Kubernetes ServiceAccount:
+
+    ```yaml
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: app-x
+      namespace: service-a
+      annotations:
+        cloud.google.com/workload-identity-provider: "projects/12345/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster"
+        cloud.google.com/token-exchange-mode: "direct-access"
+        # cloud.google.com/service-account-email is not required (it is ignored if present)
+        # optional: project ID injected as CLOUDSDK_CORE_PROJECT for gcloud / Application Default Credentials.
+        # Without this, direct-access mode cannot derive a project ID (the workload-identity-provider only
+        # exposes the project number).
+        cloud.google.com/project-id: "my-project"
+    ```
+
+2. Grant IAM bindings on the resources you want the workload to access. Bind the `principal://` (single subject) or `principalSet://` (attribute set) member, not a service account:
+
+    ```
+    # example: grant Storage Object Viewer on a bucket to a single subject
+    gcloud storage buckets add-iam-policy-binding gs://my-bucket \
+      --member='principal://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/on-prem-kubernetes/subject/SUBJECT_VALUE' \
+      --role=roles/storage.objectViewer
+    ```
+
+    Replace `SUBJECT_VALUE` with whatever value is produced by the `google.subject` attribute mapping in your Workload Identity Pool Provider.
+
+    For an attribute-based binding, use `principalSet://...workloadIdentityPools/POOL_ID/attribute.NAME/VALUE`.
+
+    See the [Google Cloud documentation on impersonation vs. direct resource access][impersonation-vs-direct] for details and the [list of products that support direct resource access][direct-support].
+
+3. The resulting pod spec is similar to the "Direct" injection example below, except the `cloud.google.com/external-credentials-json` annotation does not contain a `service_account_impersonation_url` field. Example:
+
+    ```json
+    {
+      "type": "external_account",
+      "audience": "//iam.googleapis.com/projects/12345/locations/global/workloadIdentityPools/on-prem-kubernetes/providers/this-cluster",
+      "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+      "token_url": "https://sts.googleapis.com/v1/token",
+      "credential_source": {
+        "file": "/var/run/secrets/sts.googleapis.com/serviceaccount/token",
+        "format": { "type": "text" }
+      }
+    }
+    ```
+
+[impersonation-vs-direct]: https://cloud.google.com/iam/docs/workload-identity-federation#impersonation_versus_direct_resource_access
+[direct-support]: https://cloud.google.com/iam/docs/federated-identity-supported-services
+
+## Credential Injection Modes
+
+The webhook has two independent configuration axes for ServiceAccounts:
+
+- **Token Exchange Mode** (see "Token Exchange Modes" above): what the exchanged STS token represents — a GCP Service Account (default) or the federated principal itself.
+- **Credential Injection Mode** (this section): how the generated external credential configuration is delivered to the pod — via a `gcloud` init container (default) or directly through a DownwardAPI volume.
+
+Defaults (`service-account` + `gcloud`) preserve behavior from earlier releases.
+
+### Direct (Experimental)
 
 In this mode, the Workload Identity Federation Webhook controller directly generates the Gcloud external credentials configuration and injects into the pod.
 This means the `gcloud-setup` init container is not required which can speed up pod start time.
