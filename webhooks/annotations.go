@@ -43,4 +43,10 @@ const (
 	//
 	// Set to 'direct' or 'gcloud' to determine credential injection mode. Defaults to 'gcloud'.
 	InjectionModeAnnotation = "injection-mode"
+
+	//
+	// Annotations for ServiceAccount
+	//
+	// Override GCP Project normally parsed from ServiceAccount.
+	ProjectAnnotation = "project"
 )
