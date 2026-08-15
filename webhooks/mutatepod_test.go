@@ -146,7 +146,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
 							*idConfig.WorkloadIdentityProvider,
-							*idConfig.ServiceAccountEmail,
+							idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
 							idConfig.RunAsUser,
@@ -209,7 +209,7 @@ var _ = Describe("GCPWorkloadIdentityMutator.mutatePod", func() {
 					InitContainers: []corev1.Container{
 						gcloudSetupContainer(
 							*idConfig.WorkloadIdentityProvider,
-							*idConfig.ServiceAccountEmail,
+							idConfig.ServiceAccountEmail,
 							project,
 							m.GcloudImage,
 							idConfig.RunAsUser,

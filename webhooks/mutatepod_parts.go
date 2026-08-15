@@ -83,52 +83,63 @@ func (m *GCPWorkloadIdentityMutator) externalCredConfigVolume(defaultMode int32)
 
 // Containers
 func gcloudSetupContainer(
-	workloadIdProvider, saEmail, project, gcloudImage string,
+	workloadIdProvider string,
+	saEmail *string,
+	project, gcloudImage string,
 	runAsUser *int64,
 	resources *corev1.ResourceRequirements,
 ) corev1.Container {
-	// for Restricted Profile in Pod Security Standards
 	securityContext := &corev1.SecurityContext{
 		AllowPrivilegeEscalation: ptr.To(false),
 		Capabilities: &corev1.Capabilities{
-			Drop: []corev1.Capability{
-				"ALL",
-			},
+			Drop: []corev1.Capability{"ALL"},
 		},
 	}
-
 	if runAsUser != nil {
 		securityContext.RunAsUser = runAsUser
 	}
 
+	var script string
+	envVars := []corev1.EnvVar{{
+		Name:  "GCP_WORKLOAD_IDENTITY_PROVIDER",
+		Value: workloadIdProvider,
+	}}
+	if saEmail != nil {
+		script = heredoc.Docf(`
+			gcloud iam workload-identity-pools create-cred-config \
+			  $(GCP_WORKLOAD_IDENTITY_PROVIDER) \
+			  --service-account=$(GCP_SERVICE_ACCOUNT) \
+			  --output-file=$(CLOUDSDK_CONFIG)/%s \
+			  --credential-source-file=%s
+			gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/%s
+		`, ExternalCredConfigFilename,
+			filepath.Join(K8sSATokenMountPath, K8sSATokenName),
+			ExternalCredConfigFilename,
+		)
+		envVars = append(envVars, corev1.EnvVar{Name: "GCP_SERVICE_ACCOUNT", Value: *saEmail})
+	} else {
+		script = heredoc.Docf(`
+			gcloud iam workload-identity-pools create-cred-config \
+			  $(GCP_WORKLOAD_IDENTITY_PROVIDER) \
+			  --output-file=$(CLOUDSDK_CONFIG)/%s \
+			  --credential-source-file=%s
+			gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/%s
+		`, ExternalCredConfigFilename,
+			filepath.Join(K8sSATokenMountPath, K8sSATokenName),
+			ExternalCredConfigFilename,
+		)
+	}
+	envVars = append(envVars,
+		corev1.EnvVar{Name: "CLOUDSDK_CONFIG", Value: GCloudConfigMountPath},
+		projectEnvVar(project),
+	)
+
 	c := corev1.Container{
-		Name:  GCloudSetupInitContainerName,
-		Image: gcloudImage,
-		Command: []string{
-			"sh", "-c",
-			heredoc.Docf(`
-				gcloud iam workload-identity-pools create-cred-config \
-				  $(GCP_WORKLOAD_IDENTITY_PROVIDER) \
-				  --service-account=$(GCP_SERVICE_ACCOUNT) \
-				  --output-file=$(CLOUDSDK_CONFIG)/%s \
-				  --credential-source-file=%s
-				gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/%s
-			`, ExternalCredConfigFilename,
-				filepath.Join(K8sSATokenMountPath, K8sSATokenName),
-				ExternalCredConfigFilename,
-			),
-		},
-		VolumeMounts: volumeMountsToAddOrReplace(GCloudMode),
-		Env: []corev1.EnvVar{{
-			Name:  "GCP_WORKLOAD_IDENTITY_PROVIDER",
-			Value: workloadIdProvider,
-		}, {
-			Name:  "GCP_SERVICE_ACCOUNT",
-			Value: saEmail,
-		}, {
-			Name:  "CLOUDSDK_CONFIG",
-			Value: GCloudConfigMountPath,
-		}, projectEnvVar(project)},
+		Name:            GCloudSetupInitContainerName,
+		Image:           gcloudImage,
+		Command:         []string{"sh", "-c", script},
+		VolumeMounts:    volumeMountsToAddOrReplace(GCloudMode),
+		Env:             envVars,
 		SecurityContext: securityContext,
 	}
 	if resources != nil {

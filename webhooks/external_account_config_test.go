@@ -33,10 +33,34 @@ func TestExternalAccountCredentials_Render(t *testing.T) {
   }
 }`,
 		},
+		{
+			name: "direct-access (no impersonation)",
+			fields: fields{
+				Audience: "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/workload-identity-pool/providers/workload-identity",
+				GSAEmail: "",
+			},
+			want: `{
+  "type": "external_account",
+  "audience": "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/workload-identity-pool/providers/workload-identity",
+  "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+  "token_url": "https://sts.googleapis.com/v1/token",
+  "credential_source": {
+    "file": "/var/run/secrets/sts.googleapis.com/serviceaccount/token",
+    "format": {
+      "type": "text"
+    }
+  }
+}`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := NewExternalAccountCredentials(tt.fields.Audience, tt.fields.GSAEmail)
+			var emailArg *string
+			if tt.fields.GSAEmail != "" {
+				e := tt.fields.GSAEmail
+				emailArg = &e
+			}
+			e := NewExternalAccountCredentials(tt.fields.Audience, emailArg)
 			got, err := e.Render(true)
 			if err != nil && !tt.wantErr {
 				t.Errorf("ExternalAccountCredentials.Render() returned unexpected error: %v", err)
