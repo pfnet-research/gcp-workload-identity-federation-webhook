@@ -201,15 +201,15 @@ To use direct injection mode:
         ### Everything below is added by the webhook ###
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: /var/run/secrets/gcloud/config/federation.json
+          value: /var/run/secrets/workload-identity/federation.json
         - name: CLOUDSDK_COMPUTE_REGION
           value: asia-northeast1
         volumeMounts:
         - name: gcp-iam-token
           readOnly: true
           mountPath: /var/run/secrets/sts.googleapis.com/serviceaccount
-        - mountPath: /var/run/secrets/gcloud/config
-          name: external-credential-config
+        - name: external-credential-config
+          mountPath: /var/run/secrets/workload-identity
           readOnly: true
       volumes:
       - name: gcp-iam-token
