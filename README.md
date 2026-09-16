@@ -142,6 +142,7 @@ When running a container with a non-root user, you need to give user id for GClo
 
 In this mode, the Workload Identity Federation Webhook controller directly generates the Gcloud external credentials configuration and injects into the pod.
 This means the `gcloud-setup` init container is not required which can speed up pod start time.
+The `gcloud` CLI itself also works in this mode via `CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE`, set to the same credential file as `GOOGLE_APPLICATION_CREDENTIALS`. See [Authenticate for the gcloud CLI][gcloud-federated-auth].
 
 To use direct injection mode:
 
@@ -202,6 +203,10 @@ To use direct injection mode:
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/run/secrets/workload-identity/federation.json
+        - name: CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE
+          value: /var/run/secrets/workload-identity/federation.json
+        - name: CLOUDSDK_CONFIG
+          value: /var/run/secrets/gcloud/config
         - name: CLOUDSDK_COMPUTE_REGION
           value: asia-northeast1
         volumeMounts:
@@ -211,6 +216,8 @@ To use direct injection mode:
         - name: external-credential-config
           mountPath: /var/run/secrets/workload-identity
           readOnly: true
+        - name: gcloud-config
+          mountPath: /var/run/secrets/gcloud/config
       volumes:
       - name: gcp-iam-token
         projected:
@@ -227,7 +234,11 @@ To use direct injection mode:
               fieldPath: metadata.annotations['cloud.google.com/external-credentials-json']
             path: federation.json
         name: external-credential-config
+      - name: gcloud-config
+        emptyDir: {}
     ```
+
+[gcloud-federated-auth]: https://cloud.google.com/sdk/docs/authenticate#federated-workload-identities
 
 ## Usage
 
