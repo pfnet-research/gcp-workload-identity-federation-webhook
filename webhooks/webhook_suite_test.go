@@ -85,6 +85,7 @@ var _ = BeforeSuite(func() {
 
 	err = (&GCPWorkloadIdentityMutator{
 		AnnotationDomain:        AnnotationDomainDefault,
+		DefaultInjectionMode:    DirectMode,
 		DefaultAudience:         AudienceDefault,
 		DefaultTokenExpiration:  DefaultTokenExpirationDefault,
 		MinTokenExpration:       MinTokenExprationDefault,

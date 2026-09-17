@@ -41,6 +41,8 @@ controllerManager:
     # - --setup-container-resources=
     # # DefaultMode for the token volume (default 0440 (octal int literal))
     # - --token-default-mode=
+    # # The default injection mode used when a ServiceAccount has no injection-mode annotation. One of 'gcloud' or 'direct'
+    # - --default-injection-mode=direct
     resources:
       limits:
         cpu: 500m

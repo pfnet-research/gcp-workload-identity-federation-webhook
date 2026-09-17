@@ -23,6 +23,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 
 	var sa corev1.ServiceAccount
 	var saDirect corev1.ServiceAccount
+	var saGcloud corev1.ServiceAccount
 
 	BeforeEach(func() {
 		sa = corev1.ServiceAccount{
@@ -55,16 +56,33 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 			},
 		}
 		Expect(k8sClient.Create(ctx, &saDirect)).NotTo(HaveOccurred())
+		// GCloud Inject Service Account
+		saGcloud = corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      "gcloud",
+				Annotations: map[string]string{
+					idProviderAnnotation:      workloadProvider,
+					saEmailAnnotation:         saEmail,
+					audienceAnnotation:        audience,
+					tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+					runAsUserAnnotation:       fmt.Sprint(runAsUser),
+					injectionModeAnnotation:   string(GCloudMode),
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &saGcloud)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, &sa)).NotTo(HaveOccurred())
 		Expect(k8sClient.Delete(ctx, &saDirect)).NotTo(HaveOccurred())
+		Expect(k8sClient.Delete(ctx, &saGcloud)).NotTo(HaveOccurred())
 		Expect(k8sClient.DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace(namespace)))
 	})
 
 	Describe("Simple Success Case", func() {
-		It("should inject gcloud configurations", func() {
+		It("should inject external cred configurations as the default injection mode", func() {
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,
@@ -72,6 +90,66 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "default",
+					InitContainers: []corev1.Container{{
+						Name:  "ictr",
+						Image: "busybox:test",
+					}},
+					Containers: []corev1.Container{{
+						Name:  "ctr",
+						Image: "busybox:test",
+					}},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, pod)).NotTo(HaveOccurred())
+			m := GCPWorkloadIdentityMutator{AnnotationDomain: AnnotationDomainDefault}
+			externalCreds, _ := buildExternalCredentialsJson(workloadProvider, saEmail)
+			expected := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						idProviderAnnotation:      workloadProvider,
+						saEmailAnnotation:         saEmail,
+						audienceAnnotation:        audience,
+						tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+						externalConfigAnnotation:  externalCreds,
+					},
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "default",
+					InitContainers: []corev1.Container{
+						decorateDefault(corev1.Container{
+							Name:         "ictr",
+							Image:        "busybox:test",
+							VolumeMounts: volumeMountsToAddOrReplace(DirectMode),
+							Env:          append(envVarsToAddOrReplace(DirectMode), envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
+						}),
+					},
+					Containers: []corev1.Container{decorateDefault(corev1.Container{
+						Name:         "ctr",
+						Image:        "busybox:test",
+						VolumeMounts: volumeMountsToAddOrReplace(DirectMode),
+						Env:          append(envVarsToAddOrReplace(DirectMode), envVarsToAddIfNotPresent(DefaultGCloudRegionDefault, project)...),
+					})},
+					Volumes: m.volumesToAddOrReplace(audience, tokenExpiration, VolumeModeDefault, DirectMode),
+				},
+			}
+
+			Expect(pod.Annotations).To(BeEquivalentTo(expected.Annotations))
+			Expect(pod.Spec.ServiceAccountName).To(BeEquivalentTo(expected.Spec.ServiceAccountName))
+			Expect(pod.Spec.Volumes).To(BeEquivalentTo(expected.Spec.Volumes))
+			Expect(pod.Spec.InitContainers).To(BeEquivalentTo(expected.Spec.InitContainers))
+			Expect(pod.Spec.Containers).To(BeEquivalentTo(expected.Spec.Containers))
+		})
+	})
+	Describe("GCloud Injection Case", func() {
+		It("should inject gcloud configurations via the gcloud-setup init container", func() {
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "test-pod",
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "gcloud",
 					InitContainers: []corev1.Container{{
 						Name:  "ictr",
 						Image: "busybox:test",
@@ -95,7 +173,7 @@ var _ = Describe("GCPWorkloadIdentityMutator", func() {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "default",
+					ServiceAccountName: "gcloud",
 					InitContainers: []corev1.Container{
 						decorateDefault(gcloudSetupContainer(
 							workloadProvider,

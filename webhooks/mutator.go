@@ -23,6 +23,7 @@ import (
 // GCPWorkloadIdentityMutator inject configurations for containers to acquire workload federated identity automatically
 type GCPWorkloadIdentityMutator struct {
 	AnnotationDomain        string
+	DefaultInjectionMode    InjectionMode
 	DefaultAudience         string
 	DefaultTokenExpiration  time.Duration
 	MinTokenExpration       time.Duration
@@ -61,7 +62,7 @@ func (m *GCPWorkloadIdentityMutator) Handle(ctx context.Context, ar admission.Re
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	idConfig, err := NewGCPWorkloadIdentityConfig(m.AnnotationDomain, sa)
+	idConfig, err := NewGCPWorkloadIdentityConfig(m.AnnotationDomain, m.DefaultInjectionMode, sa)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
