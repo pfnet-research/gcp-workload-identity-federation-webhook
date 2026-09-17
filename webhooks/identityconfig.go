@@ -35,6 +35,7 @@ const (
 
 func NewGCPWorkloadIdentityConfig(
 	annotationDomain string,
+	defaultInjectionMode InjectionMode,
 	sa corev1.ServiceAccount,
 ) (*GCPWorkloadIdentityConfig, error) {
 	cfg := &GCPWorkloadIdentityConfig{}
@@ -77,7 +78,7 @@ func NewGCPWorkloadIdentityConfig(
 			return nil, fmt.Errorf("%s mode must be '%s', '%s' or unset", filepath.Join(annotationDomain, InjectionModeAnnotation), DirectMode, GCloudMode)
 		}
 	} else {
-		cfg.InjectionMode = UndefinedMode
+		cfg.InjectionMode = defaultInjectionMode
 	}
 
 	if cfg.WorkloadIdentityProvider == nil && cfg.ServiceAccountEmail == nil {

@@ -24,7 +24,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						Annotations: map[string]string{},
 					},
 				}
-				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeNil())
 			})
@@ -39,13 +39,14 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
 					WorkloadIdentityProvider: &workloadProvider,
 					ServiceAccountEmail:      &saEmail,
 					Audience:                 nil,
 					TokenExpirationSeconds:   nil,
+					InjectionMode:            GCloudMode,
 				}))
 			})
 		})
@@ -61,13 +62,14 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
 					WorkloadIdentityProvider: &workloadProvider,
 					ServiceAccountEmail:      &saEmail,
 					Audience:                 &audience,
 					TokenExpirationSeconds:   &tokenExpiration,
+					InjectionMode:            GCloudMode,
 				}))
 			})
 		})
@@ -84,7 +86,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
 					WorkloadIdentityProvider: &workloadProvider,
@@ -108,7 +110,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
 					WorkloadIdentityProvider: &workloadProvider,
@@ -116,6 +118,29 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 					Audience:                 &audience,
 					TokenExpirationSeconds:   &tokenExpiration,
 					InjectionMode:            GCloudMode,
+				}))
+			})
+		})
+		When("ServiceAccount without injection-mode annotation", func() {
+			It("can create GCPWorkloadIdentityConfig with the default injection mode", func() {
+				sa := corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							idProviderAnnotation:      workloadProvider,
+							saEmailAnnotation:         saEmail,
+							audienceAnnotation:        audience,
+							tokenExpirationAnnotation: fmt.Sprint(tokenExpiration),
+						},
+					},
+				}
+				idConfig, err := NewGCPWorkloadIdentityConfig(annotaitonDomain, DirectMode, sa)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(idConfig).To(BeEquivalentTo(&GCPWorkloadIdentityConfig{
+					WorkloadIdentityProvider: &workloadProvider,
+					ServiceAccountEmail:      &saEmail,
+					Audience:                 &audience,
+					TokenExpirationSeconds:   &tokenExpiration,
+					InjectionMode:            DirectMode,
 				}))
 			})
 		})
@@ -134,7 +159,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("must set at a time")))
 
@@ -146,7 +171,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("must set at a time")))
 			})
@@ -161,7 +186,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("must be form of")))
 			})
@@ -177,7 +202,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("must be positive integer string")))
 			})
@@ -193,7 +218,7 @@ var _ = Describe("NewGCPWorkloadIdentityConfig", func() {
 						},
 					},
 				}
-				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, sa)
+				idConfig, err = NewGCPWorkloadIdentityConfig(annotaitonDomain, GCloudMode, sa)
 				Expect(idConfig).To(BeNil())
 				Expect(err).To(MatchError(ContainSubstring("mode must be")))
 			})

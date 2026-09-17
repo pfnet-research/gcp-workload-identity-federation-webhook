@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 
@@ -65,6 +66,7 @@ func main() {
 	gCloudImage := flag.String("gcloud-image", webhooks.GcloudImageDefault, "Container image for the init container setting up GCloud SDK")
 	tokenDefaultMode := flag.Int("token-default-mode", webhooks.VolumeModeDefault, "DefaultMode for the token volume. CAUTION: if you allow reading from others (e.g. '0444'), the token can read from anyone who can log in to the node.")
 	setupContainerResources := flag.String("setup-container-resources", webhooks.SetupContainerResources, `Resource spec in json for the init container setting up GCloud SDK, e.g. '{"requests":{"cpu":"100m"}}'`)
+	defaultInjectionMode := flag.String("default-injection-mode", string(webhooks.DefaultInjectionModeDefault), "The default injection mode used when a ServiceAccount has no injection-mode annotation. One of 'gcloud' or 'direct'")
 	tlsCipherSuiteValues := cliflag.PreferredTLSCipherNames()
 	tlsCipherSuiteInsecureValues := cliflag.InsecureTLSCipherNames()
 	tlsCipherSuites := flag.String("tls-cipher-suites", "", "Comma-separated list of TLS cipher suites to be used by the webhook server. \nValues: "+strings.Join(tlsCipherSuiteValues, ", ")+"\nInsecure Values: "+strings.Join(tlsCipherSuiteInsecureValues, ", "))
@@ -86,6 +88,14 @@ func main() {
 			setupLog.Error(err, "unable to parse the value of --setup-container-resources")
 			os.Exit(1)
 		}
+	}
+
+	injectionMode := webhooks.InjectionMode(strings.ToLower(*defaultInjectionMode))
+	switch injectionMode {
+	case webhooks.GCloudMode, webhooks.DirectMode:
+	default:
+		setupLog.Error(fmt.Errorf("value must be one of 'gcloud' or 'direct'"), "unable to parse the value of --default-injection-mode")
+		os.Exit(1)
 	}
 
 	var tlsOpts []func(*tls.Config)
@@ -133,6 +143,7 @@ func main() {
 
 	if err := (&webhooks.GCPWorkloadIdentityMutator{
 		AnnotationDomain:        *annotationPrefix,
+		DefaultInjectionMode:    injectionMode,
 		DefaultAudience:         *defaultAudience,
 		DefaultTokenExpiration:  *defaultTokenExpiration,
 		MinTokenExpration:       webhooks.MinTokenExprationDefault,
