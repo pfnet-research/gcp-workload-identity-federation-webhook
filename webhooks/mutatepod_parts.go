@@ -30,7 +30,7 @@ func (m *GCPWorkloadIdentityMutator) volumesToAddOrReplace(
 	vols := []corev1.Volume{k8sSATokenVolume(audience, expirationSeconds, defaultMode)}
 
 	if mode == DirectMode {
-		vols = append(vols, m.externalCredConfigVolume(defaultMode))
+		vols = append(vols, m.externalCredConfigVolume(defaultMode), gcloudConfigVolume)
 	} else {
 		vols = append(vols, gcloudConfigVolume)
 	}
@@ -159,7 +159,7 @@ func volumeMountsToAddOrReplace(mode InjectionMode) []corev1.VolumeMount {
 	volMounts := []corev1.VolumeMount{k8sSATokenVolumeMount}
 
 	if mode == DirectMode {
-		volMounts = append(volMounts, externalCredConfigVolumeMount)
+		volMounts = append(volMounts, externalCredConfigVolumeMount, gcloudConfigVolumeMount)
 	} else {
 		volMounts = append(volMounts, gcloudConfigVolumeMount)
 	}
@@ -174,6 +174,21 @@ func envVarsToAddOrReplace(mode InjectionMode) []corev1.EnvVar {
 			{
 				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 				Value: filepath.Join(DirectInjectedExternalMountPath, ExternalCredConfigFilename),
+			},
+			{
+				// Lets the gcloud CLI itself (not just client libraries relying on
+				// GOOGLE_APPLICATION_CREDENTIALS) authenticate with the same external
+				// account credential file. See:
+				// https://cloud.google.com/sdk/docs/authenticate#federated-workload-identities
+				Name:  "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE",
+				Value: filepath.Join(DirectInjectedExternalMountPath, ExternalCredConfigFilename),
+			},
+			{
+				// gcloud requires a writable config directory even when it only reads
+				// credentials via CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE; without one it
+				// fails to start under a non-root, read-only-rootfs SecurityContext.
+				Name:  "CLOUDSDK_CONFIG",
+				Value: GCloudConfigMountPath,
 			},
 		}
 	} else {

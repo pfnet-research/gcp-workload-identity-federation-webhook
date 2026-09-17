@@ -105,3 +105,87 @@ gcloud auth login --cred-file=$(CLOUDSDK_CONFIG)/federation.json
 		}
 	})
 }
+
+// These pin down literal values so a future change to the DirectMode branch
+// (e.g. dropping the gcloud CLI compatibility fields again) is caught even
+// though callers in the rest of the package build their "expected" pods by
+// calling these same functions.
+func TestVolumeMountsToAddOrReplace(t *testing.T) {
+	t.Run("GCloudMode", func(t *testing.T) {
+		actual := volumeMountsToAddOrReplace(GCloudMode)
+		expected := []corev1.VolumeMount{
+			{Name: "gcp-iam-token", MountPath: "/var/run/secrets/sts.googleapis.com/serviceaccount", ReadOnly: true},
+			{Name: "gcloud-config", MountPath: "/var/run/secrets/gcloud/config"},
+		}
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf("volumeMountsToAddOrReplace(GCloudMode) mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("DirectMode", func(t *testing.T) {
+		actual := volumeMountsToAddOrReplace(DirectMode)
+		expected := []corev1.VolumeMount{
+			{Name: "gcp-iam-token", MountPath: "/var/run/secrets/sts.googleapis.com/serviceaccount", ReadOnly: true},
+			{Name: "external-credential-config", MountPath: "/var/run/secrets/workload-identity", ReadOnly: true},
+			{Name: "gcloud-config", MountPath: "/var/run/secrets/gcloud/config"},
+		}
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf("volumeMountsToAddOrReplace(DirectMode) mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestEnvVarsToAddOrReplace(t *testing.T) {
+	t.Run("GCloudMode", func(t *testing.T) {
+		actual := envVarsToAddOrReplace(GCloudMode)
+		expected := []corev1.EnvVar{
+			{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: "/var/run/secrets/gcloud/config/federation.json"},
+			{Name: "CLOUDSDK_CONFIG", Value: "/var/run/secrets/gcloud/config"},
+		}
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf("envVarsToAddOrReplace(GCloudMode) mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("DirectMode", func(t *testing.T) {
+		actual := envVarsToAddOrReplace(DirectMode)
+		expected := []corev1.EnvVar{
+			{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: "/var/run/secrets/workload-identity/federation.json"},
+			{Name: "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE", Value: "/var/run/secrets/workload-identity/federation.json"},
+			{Name: "CLOUDSDK_CONFIG", Value: "/var/run/secrets/gcloud/config"},
+		}
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf("envVarsToAddOrReplace(DirectMode) mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestVolumesToAddOrReplace(t *testing.T) {
+	m := &GCPWorkloadIdentityMutator{AnnotationDomain: AnnotationDomainDefault}
+	const audience = "test-audience"
+	const expirationSeconds int64 = 3600
+	const defaultMode int32 = 0440
+
+	t.Run("GCloudMode", func(t *testing.T) {
+		actual := m.volumesToAddOrReplace(audience, expirationSeconds, defaultMode, GCloudMode)
+		expected := []corev1.Volume{
+			k8sSATokenVolume(audience, expirationSeconds, defaultMode),
+			gcloudConfigVolume,
+		}
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf("volumesToAddOrReplace(GCloudMode) mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("DirectMode", func(t *testing.T) {
+		actual := m.volumesToAddOrReplace(audience, expirationSeconds, defaultMode, DirectMode)
+		expected := []corev1.Volume{
+			k8sSATokenVolume(audience, expirationSeconds, defaultMode),
+			m.externalCredConfigVolume(defaultMode),
+			gcloudConfigVolume,
+		}
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf("volumesToAddOrReplace(DirectMode) mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
